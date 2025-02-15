@@ -2,7 +2,7 @@
 
 from bson.objectid import ObjectId
 from flask import jsonify, request
-from utils.db import db, collection  # Import db and collection from your existing utils/db.py
+from utils.db import collection
 
 # Get all items
 def get_items():

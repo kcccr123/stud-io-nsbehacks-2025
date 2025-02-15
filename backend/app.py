@@ -1,18 +1,22 @@
-from flask import Flask, jsonify, request
-from db import db, collection
+from flask import Flask
+from controllers.mongodb_controller import get_items, get_item, add_item, update_item, delete_item  # Import all routes
+from utils.db import db, collection  # Connect to the database
 
 app = Flask(__name__)
 
-@app.route('/items', methods=['GET'])
-def get_items():
-    items = list(collection.find({}, {"_id": 0}))  # Exclude MongoDB object ID
-    return jsonify(items)
+# Test database connection
+try:
+    db.command('ping')
+    print("Successfully connected to the database")
+except Exception as e:
+    print("Failed to connect to the database:", e)
 
-@app.route('/items', methods=['POST'])
-def add_item():
-    data = request.get_json()
-    collection.insert_one(data)
-    return jsonify({"message": "Item added successfully"}), 201
+# Register all routes from mongo_controller
+app.add_url_rule('/items', 'get_items', get_items, methods=['GET'])
+app.add_url_rule('/items/<item_id>', 'get_item', get_item, methods=['GET'])
+app.add_url_rule('/items', 'add_item', add_item, methods=['POST'])
+app.add_url_rule('/items/<item_id>', 'update_item', update_item, methods=['PUT'])
+app.add_url_rule('/items/<item_id>', 'delete_item', delete_item, methods=['DELETE'])
 
 if __name__ == "__main__":
     app.run(debug=True)
