@@ -1,6 +1,6 @@
 from flask import Flask
 from controllers.user_controller import register_user, login_user, save_rl_data, get_rl_data
-from controllers.flashcards_controller import get_flashcards, get_flashcard, add_flashcard, update_flashcard, delete_flashcard
+from controllers.flashcards_controller import get_flashcards, get_flashcard, add_flashcard, update_flashcard, delete_flashcard, find_similar_flashcards
 from controllers.performance_controller import get_performance, add_update_performance, delete_performance
 from utils.db import db
 
@@ -24,6 +24,8 @@ app.add_url_rule('/flashcards/<flashcard_id>', 'get_flashcard', get_flashcard, m
 app.add_url_rule('/flashcards', 'add_flashcard', add_flashcard, methods=['POST'])
 app.add_url_rule('/flashcards/<flashcard_id>', 'update_flashcard', update_flashcard, methods=['PUT'])
 app.add_url_rule('/flashcards/<flashcard_id>', 'delete_flashcard', delete_flashcard, methods=['DELETE'])
+app.add_url_rule('/flashcards/similar', 'find_similar_flashcards', find_similar_flashcards, methods=['GET'])
+
 
 # Register routes from performance_controller
 app.add_url_rule('/performance/<user_id>', 'get_performance', get_performance, methods=['GET'])

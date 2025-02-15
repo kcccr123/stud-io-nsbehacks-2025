@@ -51,6 +51,37 @@ def add_flashcard():
     flashcard_collection.insert_one(flashcard_data)
     return jsonify({"message": "Flashcard added with BSON vector embedding"}), 201
 
+# Define the find_similar_flashcards API call using vector search
+def find_similar_flashcards():
+    data = request.get_json()
+    query_text = data.get("query")
+    top_k = data.get("top_k", 5)
+
+    # Generate embedding for the query
+    query_embedding = get_embedding(query_text, "float32")
+
+    # Run the vector search query
+    pipeline = [
+        {
+            "$vectorSearch": {
+                "index": "vector_index",
+                "queryVector": query_embedding,
+                "path": "embedding",
+                "limit": top_k,
+                "numCandidates": 100
+            }
+        },
+        {
+            "$project": {
+                "question": 1,
+                "answer": 1,
+                "score": {"$meta": "vectorSearchScore"}
+            }
+        }
+    ]
+
+    results = list(flashcard_collection.aggregate(pipeline))
+    return jsonify(results), 200
 
 # def add_flashcard():
 #     data = request.get_json()
@@ -86,21 +117,41 @@ def delete_flashcard(flashcard_id):
         return jsonify({"message": "Flashcard deleted successfully"}), 200
     return jsonify({"error": "Flashcard not found"}), 404
 
-# Search flashcards by vector similarity
-def search_flashcards_by_vector():
+# Define the find_similar_flashcards API call using vector search
+def find_similar_flashcards():
     data = request.get_json()
-    query_embedding = data.get("embedding")
+    query_text = data.get("query")
     top_k = data.get("top_k", 5)
 
-    results = flashcard_collection.aggregate([
-        {
-            "$vectorSearch": {
-                "queryVector": query_embedding,
-                "path": "embedding",
-                "numCandidates": 100,
-                "limit": top_k,
-                "index": "flashcard_vector_index"
+    # Generate embedding for the query
+    query_embedding = get_embedding(query_text, "float32").tolist()  # Convert to list for MongoDB
+
+    # Run the vector search query
+    try:
+        pipeline = [
+            {
+                "$vectorSearch": {
+                    "index": "flashcard_index",
+                    "queryVector": query_embedding,
+                    "path": "embedding",
+                    "limit": top_k,
+                    "numCandidates": 100,
+                    "numDimensions": 768  # Match the indexed dimension size
+
+                }
+            },
+            {
+                "$project": {
+                    "_id": 0,  # Exclude ObjectId from the output
+                    "question": 1,
+                    "answer": 1,
+                    "score": {"$meta": "vectorSearchScore"}
+                }
             }
-        }
-    ])
-    return jsonify(list(results))
+        ]
+
+        results = list(flashcard_collection.aggregate(pipeline))
+        return jsonify(results), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
