@@ -28,6 +28,7 @@ export default function ClassPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [studyNotification, setStudyNotification] = useState(true);
 
   useEffect(() => {
     if (!id) return;
@@ -276,6 +277,19 @@ export default function ClassPage() {
               }}
             />
             <div className="flex justify-center space-x-4">
+              {studyNotification && (
+                <div className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded-lg shadow-lg w-64">
+                  <h3 className="text-lg font-bold mb-2">Time to Study!</h3>
+                  <p>Let's get started with your flashcards!</p>
+                  <button
+                    className="mt-2 bg-white text-blue-500 px-3 py-1 rounded hover:bg-gray-100"
+                    onClick={() => setStudyNotification(false)}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+
               <button
                 className="px-6 py-2 w-40 bg-primary text-foreground rounded hover:bg-primary-hover focus:outline-none text-center"
                 onClick={() => {
