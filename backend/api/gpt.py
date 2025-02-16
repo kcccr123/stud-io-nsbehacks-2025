@@ -38,7 +38,7 @@ def question(chats):
                 "role": "system",
                 "content": (
                     "You are a helpful assistant that processes PDF documents and extracts information. "
-                    "Generate multiple flashcards in valid JSON format, with each flashcard containing "
+                    "Generate 10 flashcards in valid JSON format, with each flashcard containing "
                     "the keys: question, answer, topic, difficulty. Return ONLY JSON, e.g.:\n"
                     "[\n  {\n    \"question\": \"...\",\n    \"answer\": \"...\",\n    \"topic\": \"...\",\n    \"difficulty\": \"...\"\n  },\n  ...\n]"
                 )
