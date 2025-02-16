@@ -109,9 +109,11 @@ export default function ClassPage() {
     const formData = new FormData();
     formData.append("chat_id", "CSC111");
     formData.append("user_id", "67b0e038fede027c6a136c03");
-    formData.append("flashcard_id", currentFlashcard._id);
+    formData.append("flashcard_id", currentFlashcard.id.flashcard_id);
     formData.append("question", aiText);
     formData.append("answer", answer);
+
+    console.log(`Flashcard id ${currentFlashcard.id.flashcard_id}`);
 
     try {
       const response = await fetch("http://localhost:5000/answer", {
@@ -147,7 +149,7 @@ export default function ClassPage() {
     console.log(question);
     if (selectedFile) {
       const formData = new FormData();
-      formData.append("chat_id", "id");
+      formData.append("chat_id", "CSC111");
       formData.append("user_id", "67b0e038fede027c6a136c03");
       formData.append("user_request", question);
       formData.append("pdfs", selectedFile); // Key `pdfs` matches your backend expectation
@@ -165,11 +167,6 @@ export default function ClassPage() {
             method: "POST",
             body: formData,
           });
-
-          if (response.topic !== null) {
-            setStudyNotification(true);
-            setTopic(response.topic);
-          }
         }
 
         if (!response.ok) {
@@ -177,6 +174,11 @@ export default function ClassPage() {
         }
 
         const result = await response.json();
+        console.log(result);
+        if (!isReviewMode && result.topic !== undefined) {
+          setStudyNotification(true);
+          setTopic(result.topic);
+        }
         console.log("Upload successful:", result);
         setFlashcards(result.flashcards);
         SetRecommendedFlashcard(result.selected_flashcard);

@@ -13,6 +13,7 @@ from api.gpt import question
 from flask_cors import CORS
 import random
 from openai import OpenAI
+from bson.objectid import ObjectId
 
 
 app = Flask(__name__)
@@ -392,18 +393,26 @@ def answer():
     question_text = request.form.get("question", "").strip()
     user_answer = request.form.get("answer", "").strip()
 
-    if not chat_id:
-        return jsonify({"error": "Missing chat_id."}), 400
-    if not user_id:
-        return jsonify({"error": "Missing user_id."}), 400
-    if not flashcard_id:
-        return jsonify({"error": "Missing flashcard_id."}), 400
-    if not question_text:
-        return jsonify({"error": "Missing question."}), 400
-    if not user_answer:
-        return jsonify({"error": "Missing answer."}), 400
+    print("CHAT_ID", chat_id)
+    print("USER_ID", user_id)
+    print("FLASHCARD_ID", flashcard_id)
+    print("QUESTION_TEXT", question_text)
+    print("CHAT_ID", user_answer)
+
+
+    # if not chat_id:
+    #     return jsonify({"error": "Missing chat_id."}), 400
+    # if not user_id:
+    #     return jsonify({"error": "Missing user_id."}), 400
+    # if not flashcard_id:
+    #     return jsonify({"error": "Missing flashcard_id."}), 400
+    # if not question_text:
+    #     return jsonify({"error": "Missing question."}), 400
+    # if not user_answer:
+    #     return jsonify({"error": "Missing answer."}), 400
 
     # Ensure chat context exists
+    print(chats)
     if chat_id not in chats:
         return jsonify({"error": "Invalid chat_id. No previous conversation found."}), 400
 
