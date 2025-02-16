@@ -30,7 +30,7 @@ def question_review():
       - "chat_id" to maintain conversation context.
       - "user_id" for personalized recommendations.
     Returns:
-      - A newly generated flashcard in JSON format.
+      - The generated flashcards, recommended flashcards used, and the ID of the newly generated flashcard.
     """
 
     chat_id = request.form.get("chat_id", None)
@@ -89,25 +89,21 @@ def question_review():
     print(f"""\"\"\"{assistant_reply}\"\"\"""")
     print("===================================\n")
 
-    # Remove Markdown formatting if present (e.g., triple backticks)
+    # Remove Markdown formatting if present
     assistant_reply = assistant_reply.strip()
     if assistant_reply.startswith("```"):
         lines = assistant_reply.splitlines()
-        # Remove the first line if it starts with ```
         if lines[0].startswith("```"):
             lines = lines[1:]
-        # Remove the last line if it starts with ```
         if lines and lines[-1].startswith("```"):
             lines = lines[:-1]
         assistant_reply = "\n".join(lines).strip()
 
     # 5. Parse JSON flashcard
     try:
-        # Expecting a JSON array
         new_flashcards = json.loads(assistant_reply)
         if not isinstance(new_flashcards, list):
             raise ValueError("Expected a JSON array of flashcards.")
-        # For this review function, we'll assume only one new flashcard is generated and take the first
         new_flashcard = new_flashcards[0]
         if not isinstance(new_flashcard, dict) or "question" not in new_flashcard:
             raise ValueError("Invalid flashcard format received.")
@@ -117,10 +113,15 @@ def question_review():
         if status_code != 201:
             return jsonify({"error": "Failed to save the new flashcard."}), 500
 
-        # 7. Return the generated flashcard along with the recommended flashcards used
+        # Extract the flashcard ID from the response
+        flashcard_id = resp.get("flashcard_id")
+
+        new_flashcard["id"] = flashcard_id
+
+        # 7. Return all original data plus the selected flashcard ID.
         return jsonify({
-            "recommended_flashcard": new_flashcard,
-            "flashcards": recommended_flashcards
+            "recommended_flashcards": recommended_flashcards,
+            "selected_flashcard": new_flashcard,
         }), 200
 
     except (json.JSONDecodeError, ValueError) as e:
@@ -130,7 +131,6 @@ def question_review():
             "exception": str(e)
         }), 500
 
-    
 
 def question_study():
     """
@@ -142,11 +142,12 @@ def question_study():
           - A "user_request" to specify type of flashcards (e.g., multiple choice, word problems, specific topic)
     Generates flashcards via ChatGPT in JSON format, parses them, and
     stores each one in MongoDB using add_flashcard_func.
+    Returns all generated flashcards, along with the complete data of one randomly selected flashcard and its ID.
     """
     
     chat_id = request.form.get("chat_id", None)
     user_id = request.form.get("user_id", None)
-    user_request = request.form.get("user_request", "").strip()  # Get user request
+    user_request = request.form.get("user_request", "").strip()
 
     if not chat_id:
         return jsonify({"error": "Missing chat_id."}), 400
@@ -171,11 +172,10 @@ def question_study():
             else:
                 return jsonify({"error": f"File {file.filename} is not a PDF."}), 400
 
-    # If no PDFs provided, ensure we have some content to work with
     if not extracted_text.strip() and not user_request:
         return jsonify({"error": "No PDFs provided and no user request specified."}), 400
 
-    # 2. Construct GPT prompt with an updated system prompt
+    # 2. Construct GPT prompt with updated system prompt
     system_prompt = (
         "You are a helpful AI that generates flashcards. Based on the provided content and user request, create 10 flashcards in JSON format. "
         "Each flashcard must contain exactly the following keys: 'question', 'topic', and 'difficulty'. "
@@ -193,13 +193,10 @@ def question_study():
         "Output only the JSON array and nothing else."
     )
 
-    # Include extracted text from PDFs if available
     prompt_content = extracted_text if extracted_text.strip() else ""
-    # Include user request (e.g., multiple choice, specific focus area)
     if user_request:
         prompt_content += f"\n\nUser Request: {user_request}"
 
-    # Maintain chat history
     if chat_id not in chats:
         chats[chat_id] = [{"role": "system", "content": system_prompt}]
     chats[chat_id].append({"role": "user", "content": prompt_content})
@@ -213,7 +210,6 @@ def question_study():
     assistant_reply = response.choices[0].message.content
     chats[chat_id].append({"role": "assistant", "content": assistant_reply})
 
-    # Debug print
     print("\n============ GPT Reply ============")
     print(f"""\"\"\"{assistant_reply}\"\"\"""")
     print("===================================\n")
@@ -224,32 +220,24 @@ def question_study():
         if not isinstance(flashcards, list):
             raise ValueError("Expected a JSON array of flashcards.")
 
-        # 5. Insert each flashcard into the DB using the new function
-        flashcards_added = 0
+        # 5. Insert each flashcard into the DB using add_flashcard_func
         for fc in flashcards:
             resp, status_code = add_flashcard_func(fc)
-            if status_code == 201:
-                flashcards_added += 1
+            fc['id'] = resp
+            if status_code != 201:
+                # Optionally log failures here.
+                pass
 
-        # 6. Select one flashcard to return
+        # 6. Randomly select one flashcard from the generated list
         selected_flashcard = random.choice(flashcards) if flashcards else None
+        if not selected_flashcard:
+            return jsonify({"error": "No flashcard generated."}), 500
 
-        # Call the function and unpack the response for the struggling flashcard topic
-        response_obj, status_code = get_top_failed_flashcard(user_id, 50.0)
-        res_data = response_obj.get_json()
-        if res_data and "topic" in res_data:
-            return jsonify({ 
-                "flashcards_added": flashcards_added,
-                "flashcards": flashcards,
-                "selected_flashcard": selected_flashcard,
-                "topic": res_data["topic"]
-            }), 200
-        else:
-            return jsonify({
-                "flashcards_added": flashcards_added,
-                "flashcards": flashcards,
-                "selected_flashcard": selected_flashcard,
-            }), 200
+        # 7. Return all generated flashcards along with the complete data of the selected flashcard and its ID.
+        return jsonify({
+            "flashcards": flashcards,
+            "selected_flashcard": selected_flashcard,
+        }), 200
 
     except (json.JSONDecodeError, ValueError) as e:
         return jsonify({
@@ -257,6 +245,8 @@ def question_study():
             "raw_reply": assistant_reply,
             "exception": str(e)
         }), 500
+
+
 
  
 def question():
@@ -273,7 +263,7 @@ def question():
     """
     chat_id = request.form.get("chat_id", None)
     user_id = request.form.get("user_id", None)
-
+ 
     if not chat_id:
         return jsonify({"error": "Missing chat_id."}), 400
     if not user_id:
