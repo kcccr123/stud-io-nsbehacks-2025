@@ -5,11 +5,26 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: add your authentication logic here
-    console.log("Logging in with", email, password);
-    console.log(PROJECT_NAME);
+    try {
+      const response = await fetch("http://127.0.0.1:5000/users/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Login failed");
+      }
+
+      const result = await response.json();
+      console.log("Login successful:", result);
+    } catch (error) {
+      console.error("Error during login:", error.message);
+    }
   };
 
   return (
