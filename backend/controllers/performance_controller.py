@@ -103,36 +103,6 @@ def log_user_performance(user_id):
     return jsonify({"message": "Performance logged successfully"}), 200
 
 
-
-def get_flashcard_topic(flashcard):
-    """
-    Use an LLM to determine the topic of the flashcard.
-    The flashcard is expected to have a "question" field and optionally an "answer" field.
-    """
-    # Combine the flashcard content to form a prompt.
-    content = flashcard.get("question", "")
-    if flashcard.get("answer"):
-        content += "\n" + flashcard["answer"]
-    
-    prompt = (
-        "Determine the main topic or subject of the following flashcard content. "
-        "Return only a short phrase as the topic.\n\n"
-        f"Content: {content}"
-    )
-    
-    try:
-        response = openai.Completion.create(
-            model="text-davinci-003",
-            prompt=prompt,
-            max_tokens=10,
-            temperature=0.5,
-        )
-        topic = response.choices[0].text.strip()
-        return topic
-    except Exception as e:
-        print(f"LLM API error: {e}")
-        return "Unknown"
-
 def get_top_failed_flashcard(user_id, threshold=1.0):
     """
     Determine the flashcard that the user has struggled with the most.
@@ -142,8 +112,8 @@ def get_top_failed_flashcard(user_id, threshold=1.0):
     (A lower score indicates poorer performance.)
 
     This function selects the flashcard with the lowest score and, if that score
-    is below the specified threshold, it sends the flashcard content to the LLM to
-    determine its topic. The topic is then returned in the response.
+    is below the specified threshold, retrieves its topic directly from the flashcard.
+    The topic is then returned in the response.
 
     Parameters:
         user_id (str): The user's ID.
@@ -152,17 +122,15 @@ def get_top_failed_flashcard(user_id, threshold=1.0):
 
     Returns:
         JSON response with:
-            - The flashcard details,
-            - Its performance score, and
-            - The topic determined by the LLM.
+            - The flashcard's topic (taken directly from the flashcard),
         Otherwise, a message indicating no flashcards have crossed the failure threshold.
     """
-    print("FLAGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
     q_table = get_q_table(user_id)
     flashcard_scores = []
-    
+    print("TEST0")
     # Calculate performance scores for each flashcard.
     for flashcard_id, actions in q_table.items():
+        print("TEST1")
         score = actions.get("correct", 0.0) - actions.get("incorrect", 0.0)
         try:
             flashcard = flashcard_collection.find_one({"_id": ObjectId(flashcard_id)})
@@ -177,21 +145,25 @@ def get_top_failed_flashcard(user_id, threshold=1.0):
             continue
     
     # If no flashcards are found, return an informative message.
+    print("TEST2")
     if not flashcard_scores:
+        print("TEST3")
         return jsonify({"message": "No flashcard data available."}), 200
-    
+    print("TEST4")
     # Sort flashcards by their performance score (lowest first).
     flashcard_scores_sorted = sorted(flashcard_scores, key=lambda x: x["score"])
     top_failed = flashcard_scores_sorted[0]
+    print("TEST5")
     
     # Check if the worst flashcard's score has crossed the failure threshold.
+    print(top_failed["flashcard"], 'worst flash card is here')
     if top_failed["score"] < threshold:
         flashcard = top_failed["flashcard"]
         # Convert ObjectId to string for JSON serialization.
         flashcard["_id"] = str(flashcard["_id"])
         
-        # Use the LLM to determine the flashcard topic.
-        topic = get_flashcard_topic(flashcard)
+        # Directly extract the topic from the flashcard.
+        topic = flashcard.get("topic", "Unknown")
         
         return jsonify({
             "topic": topic
@@ -200,6 +172,5 @@ def get_top_failed_flashcard(user_id, threshold=1.0):
         return jsonify({
             "message": "No flashcards have crossed the failure threshold."
         }), 200
-
 
 
