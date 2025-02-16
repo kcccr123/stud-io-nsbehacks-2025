@@ -67,6 +67,12 @@ export default function Login() {
               required
             />
           </div>
+          <p className="text-center mt-4">
+            Don’t have an account?{" "}
+            <a href="/register" className="text-blue-500 hover:underline">
+              Register here
+            </a>
+          </p>
           <button
             type="submit"
             className="block bg-primary text-white p-2 rounded hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary-dark mx-auto w-1/2 "

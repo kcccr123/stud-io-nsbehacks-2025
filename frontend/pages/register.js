@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { useRouter } from "next/router";
 
 export default function RegisterPage() {
+  const router = useRouter();
+
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({
     email: "",
@@ -9,6 +12,7 @@ export default function RegisterPage() {
     confirmPassword: "",
   });
   const [errorMsg, setErrorMsg] = useState("");
+  const [registerSuccessful, setRegisterSuccessful] = useState(false);
 
   // Get error message based on step
   const getErrorMessage = () => {
@@ -70,8 +74,18 @@ export default function RegisterPage() {
 
       const result = await response.json();
       console.log("Registration successful:", result);
+      setRegisterSuccessful(true);
+
+      // Show a success message
+      setErrorMsg("Registration successful!");
+
+      // Delay the redirect by 2 seconds to show the message
+      setTimeout(() => {
+        router.push("/login");
+      }, 2000);
     } catch (error) {
       console.error("Error during registration:", error.message);
+      setErrorMsg("Error during registration: " + error.message);
     }
   };
 
@@ -104,9 +118,11 @@ export default function RegisterPage() {
   const hiddenClass =
     "transition-transform transition-opacity duration-500 ease-in-out transform translate-x-full opacity-0 absolute inset-0";
 
-  // Popup styling for error message
-  const errorPopupClass =
-    "absolute left-0 bottom-full mt-1 text-sm text-error bg-surface border border-error px-2 py-1 rounded ";
+  const errorPopupClass = `absolute left-0 bottom-full mt-1 text-sm px-2 py-1 rounded ${
+    registerSuccessful
+      ? "text-success text-black bg-green-200 border-green-500"
+      : "text-error bg-red-200 border-red-500"
+  }`;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
