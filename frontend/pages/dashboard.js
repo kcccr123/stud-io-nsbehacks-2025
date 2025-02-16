@@ -83,12 +83,35 @@ const Dashboard = () => {
             classes.map((cls) => (
               <div
                 key={cls.id}
-                onClick={() => handleClassClick(cls.id)}
-                className="bg-surface border border-gray-300 rounded-2xl p-8 flex items-center justify-center transform transition-transform duration-300 hover:scale-105 cursor-pointer shadow-lg w-72 h-40"
+                className="relative bg-surface border border-gray-300 rounded-2xl p-8 flex items-center justify-center transform transition-transform duration-300 hover:scale-105 cursor-pointer shadow-lg w-72 h-40 group"
               >
-                <h2 className="text-2xl font-bold text-center text-foreground">
-                  {cls.className}
-                </h2>
+                <button
+                  className="absolute top-4 left-4 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fetch(`http://localhost:5000/classes/${cls.id}`, {
+                      method: "DELETE",
+                    })
+                      .then((response) => {
+                        if (response.ok) {
+                          alert("Class deleted successfully");
+                          // Optionally refresh class list
+                        } else {
+                          alert("Failed to delete class");
+                        }
+                      })
+                      .catch((err) =>
+                        console.error("Error deleting class:", err)
+                      );
+                  }}
+                >
+                  ✕
+                </button>
+                <div onClick={() => handleClassClick(cls.id)}>
+                  <h2 className="text-2xl font-bold text-center text-foreground">
+                    {cls.className}
+                  </h2>
+                </div>
               </div>
             ))
           )}
