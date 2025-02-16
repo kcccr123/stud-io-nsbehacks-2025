@@ -122,7 +122,9 @@ def question():
                 flashcard_ids.append(resp["flashcard_id"])  # Store ID
 
         # 6. Get a recommended flashcard for the user
+        print('here')
         recommended_flashcard = get_recommended_flashcards(user_id)
+        print(recommended_flashcard)
 
         return jsonify({
             "flashcards_added": flashcards_added,
@@ -263,7 +265,7 @@ app.add_url_rule('/performance/<user_id>', 'add_update_performance', add_update_
 app.add_url_rule('/performance/<user_id>', 'delete_performance', delete_performance, methods=['DELETE'])
 app.add_url_rule('/performance/<user_id>/q_table', 'get_q_table', get_q_table, methods=['GET'])
 app.add_url_rule('/performance/<user_id>/log', 'log_user_performance', log_user_performance, methods=['GET'])
-app.add_url_rule('/performance/<user_id>/recommendations', 'get_recommended_flashcards', get_recommended_flashcards, methods=['GET'])
+# app.add_url_rule('/performance/<user_id>/recommendations', 'get_recommended_flashcards', get_recommended_flashcards, methods=['GET'])
 
 
 

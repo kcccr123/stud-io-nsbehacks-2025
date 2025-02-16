@@ -76,17 +76,16 @@ def recommend_questions(user_id):
 def get_recommended_flashcards(user_id):
     try:
         recommended_ids = recommend_questions(user_id)
-        # Filter out invalid ObjectIds
         valid_ids = []
         for i in recommended_ids:
             try:
                 valid_ids.append(ObjectId(i))
             except InvalidId:
                 print(f"Invalid ObjectId skipped: {i}")
-
-        return  (flashcard_collection.find({"_id": {"$in": valid_ids}}, {"_id": 0, "question": 1, "answer": 1}))
+        results = list(flashcard_collection.find({"_id": {"$in": valid_ids}}, {"_id": 0, "question": 1, "answer": 1}))
+        return results  # Return data directly, not jsonify
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return {"error": str(e)}
 
 # Log user performance and update Q-table
 def log_user_performance(user_id):
