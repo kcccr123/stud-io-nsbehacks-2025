@@ -36,6 +36,8 @@ const Dashboard = () => {
       if (!response.ok) throw new Error("Failed to join class");
       setIsModalOpen(false);
       setNewClassName("");
+      window.location.reload(); // Refresh the page to load updated classes
+
       alert("Class joined successfully");
     } catch (error) {
       alert(error.message);
@@ -86,7 +88,7 @@ const Dashboard = () => {
                 className="relative bg-surface border border-gray-300 rounded-2xl p-8 flex items-center justify-center transform transition-transform duration-300 hover:scale-105 cursor-pointer shadow-lg w-72 h-40 group"
               >
                 <button
-                  className="absolute top-4 left-4 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 flex items-center justify-center"
+                  className="absolute top-4 left-4 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity w-10 h-10 flex items-center justify-center"
                   onClick={(e) => {
                     e.stopPropagation();
                     fetch(`http://localhost:5000/classes/${cls.id}`, {
@@ -95,7 +97,7 @@ const Dashboard = () => {
                       .then((response) => {
                         if (response.ok) {
                           alert("Class deleted successfully");
-                          // Optionally refresh class list
+                          window.location.reload(); // Refresh the page to load updated classes
                         } else {
                           alert("Failed to delete class");
                         }
