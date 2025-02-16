@@ -50,18 +50,24 @@ def question_review():
 
     # 2. Format Data for GPT
     formatted_recommendations = "\n".join([
-        f"- Q: {fc['question']} A: {fc['answer']}" for fc in recommended_flashcards
+        f"- Q: {fc['question']} A: {fc.get('answer', 'N/A')}" for fc in recommended_flashcards
     ])
 
     # 3. Prepare ChatGPT prompt
     system_prompt = (
         "You are an AI that generates a new, unique flashcard based on previous flashcards. "
-        "Use the given recommended flashcards to generate a new, challenging question and its answer. "
-        "Ensure the output is a valid JSON object with keys: question, answer, topic, difficulty. "
-        "Output ONLY valid JSON. No markdown formatting. Example format:\n"
-        '{\n  "question": "What is the significance of backpropagation in neural networks?",\n'
-        '  "answer": "Backpropagation is an optimization algorithm that updates weights to minimize error in training.",\n'
-        '  "topic": "Machine Learning",\n  "difficulty": "Medium"\n}'
+        "Use the given recommended flashcards to generate a new, challenging question. "
+        "Your output must be a valid JSON array containing one or more flashcard objects. Each flashcard object "
+        "must have exactly the following keys: 'question', 'topic', and 'difficulty'. "
+        "Output ONLY valid JSON that can be decoded using json.loads() and do NOT include any Markdown formatting (e.g., no triple backticks). "
+        "Do not include any additional keys or text. Here is an example format:\n"
+        "[\n"
+        "  {\n"
+        "    \"question\": \"What is the significance of backpropagation in neural networks?\",\n"
+        "    \"topic\": \"Machine Learning\",\n"
+        "    \"difficulty\": \"Medium\"\n"
+        "  }\n"
+        "]"
     )
 
     user_prompt = f"Here are previous flashcards:\n{formatted_recommendations}\nGenerate a new flashcard."
@@ -69,7 +75,6 @@ def question_review():
     # Maintain chat history
     if chat_id not in chats:
         chats[chat_id] = [{"role": "system", "content": system_prompt}]
-
     chats[chat_id].append({"role": "user", "content": user_prompt})
 
     # 4. Call ChatGPT
@@ -85,9 +90,26 @@ def question_review():
     print(f"""\"\"\"{assistant_reply}\"\"\"""")
     print("===================================\n")
 
+    # Remove Markdown formatting if present (e.g., triple backticks)
+    assistant_reply = assistant_reply.strip()
+    if assistant_reply.startswith("```"):
+        lines = assistant_reply.splitlines()
+        # Remove the first line if it starts with ```
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        # Remove the last line if it starts with ```
+        if lines and lines[-1].startswith("```"):
+            lines = lines[:-1]
+        assistant_reply = "\n".join(lines).strip()
+
     # 5. Parse JSON flashcard
     try:
-        new_flashcard = json.loads(assistant_reply)
+        # Expecting a JSON array
+        new_flashcards = json.loads(assistant_reply)
+        if not isinstance(new_flashcards, list):
+            raise ValueError("Expected a JSON array of flashcards.")
+        # For this review function, we'll assume only one new flashcard is generated and take the first
+        new_flashcard = new_flashcards[0]
         if not isinstance(new_flashcard, dict) or "question" not in new_flashcard:
             raise ValueError("Invalid flashcard format received.")
 
@@ -96,7 +118,7 @@ def question_review():
         if status_code != 201:
             return jsonify({"error": "Failed to save the new flashcard."}), 500
 
-        # 7. Return the generated flashcard
+        # 7. Return the generated flashcard along with the recommended flashcards used
         return jsonify({
             "recommended_flashcard": new_flashcard,
             "flashcards": recommended_flashcards
@@ -108,6 +130,7 @@ def question_review():
             "raw_reply": assistant_reply,
             "exception": str(e)
         }), 500
+
     
 
 def question_study():
@@ -125,7 +148,6 @@ def question_study():
     chat_id = request.form.get("chat_id", None)
     user_id = request.form.get("user_id", None)
     user_request = request.form.get("user_request", "").strip()  # Get user request
-
 
     if not chat_id:
         return jsonify({"error": "Missing chat_id."}), 400
@@ -154,18 +176,26 @@ def question_study():
     if not extracted_text.strip() and not user_request:
         return jsonify({"error": "No PDFs provided and no user request specified."}), 400
 
-    # 2. Construct GPT prompt
+    # 2. Construct GPT prompt with an updated system prompt
     system_prompt = (
-        "You are a helpful AI that generates flashcards. Based on the provided content and user request, "
-        "create 20 flashcards in JSON format. Each flashcard should contain: question, topic, difficulty. "
-        "Make the flashcard questions varied and unique and good for practicing students. Try and cover as much of the content"
-        "in the provided PDF's as possible and make sure to fufill the user request "
-        "Format the output as valid JSON, and do NOT include Markdown formatting like ```json or ```."
+        "You are a helpful AI that generates flashcards. Based on the provided content and user request, create 10 flashcards in JSON format. "
+        "Each flashcard must contain exactly the following keys: 'question', 'topic', and 'difficulty'. "
+        "Ensure the flashcard questions are varied, unique, and effective for student practice, covering as much of the provided PDF content as possible. "
+        "IMPORTANT: Your output must be exactly a valid JSON array that can be decoded using json.loads(). DO NOT include any Markdown formatting, "
+        "such as triple backticks (```), language specifiers, or any extra text. "
+        "The output should look exactly like this (with 10 flashcard objects in the array):\n"
+        "[\n"
+        "  {\n"
+        "    \"question\": \"What is the significance of backpropagation in neural networks?\",\n"
+        "    \"topic\": \"Machine Learning\",\n"
+        "    \"difficulty\": \"Medium\"\n"
+        "  }\n"
+        "]\n"
+        "Output only the JSON array and nothing else."
     )
 
     # Include extracted text from PDFs if available
     prompt_content = extracted_text if extracted_text.strip() else ""
-    
     # Include user request (e.g., multiple choice, specific focus area)
     if user_request:
         prompt_content += f"\n\nUser Request: {user_request}"
@@ -173,7 +203,6 @@ def question_study():
     # Maintain chat history
     if chat_id not in chats:
         chats[chat_id] = [{"role": "system", "content": system_prompt}]
-
     chats[chat_id].append({"role": "user", "content": prompt_content})
 
     # 3. Call ChatGPT
@@ -189,7 +218,7 @@ def question_study():
     print("\n============ GPT Reply ============")
     print(f"""\"\"\"{assistant_reply}\"\"\"""")
     print("===================================\n")
-    print('whats goign on???????')
+
     # 4. Parse JSON flashcards
     try:
         flashcards = json.loads(assistant_reply)
@@ -206,24 +235,14 @@ def question_study():
         # 6. Select one flashcard to return
         selected_flashcard = random.choice(flashcards) if flashcards else None
 
-        print('whats goign on???????')
-        # Call the function and unpack the response
-        response_obj, status_code = get_top_failed_flashcard(user_id, 1.0)
-        # Extract the JSON data (a dict) from the response
+        # Call the function and unpack the response for the struggling flashcard topic
+        response_obj, status_code = get_top_failed_flashcard(user_id, 50.0)
         res_data = response_obj.get_json()
-        print(res_data, 'HELASHLAWLWDAWDAWDAWDAWDAWD')
         if res_data and "topic" in res_data:
-            print('heloooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo')
-            print( { 
-                "flashcards_added": flashcards_added,
-                "flashcards": flashcards,  # Full set of generated flashcards
-                "selected_flashcard": selected_flashcard,  # Returns one flashcard
-                "topic": res_data["topic"]
-            })
             return jsonify({ 
                 "flashcards_added": flashcards_added,
-                "flashcards": flashcards,  # Full set of generated flashcards
-                "selected_flashcard": selected_flashcard,  # Returns one flashcard
+                "flashcards": flashcards,
+                "selected_flashcard": selected_flashcard,
                 "topic": res_data["topic"]
             }), 200
         else:
@@ -239,6 +258,7 @@ def question_study():
             "raw_reply": assistant_reply,
             "exception": str(e)
         }), 500
+
  
 def question():
     """
