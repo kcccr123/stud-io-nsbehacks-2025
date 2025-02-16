@@ -247,23 +247,25 @@ export default function ClassPage() {
       </div>
 
       <nav className="min-h-screen w-screen flex justify-center items-start pt-10 bg-background">
-        <button
-          className="flex items-center bg-primary hover:bg-primary-hover text-foreground px-4 py-2 rounded focus:outline-none"
-          onClick={() => router.back()}
-        >
-          ← Back
-        </button>
         <div className="w-full max-w-3xl">
           <div className="flex items-center space-x-4 p-4 rounded justify-between">
             <h1 className="text-5xl font-bold text-foreground">
               {classData.name}
             </h1>
-            <button
-              className="flex items-center bg-primary hover:bg-primary-hover text-foreground px-4 py-2 rounded focus:outline-none"
-              onClick={() => setIsModalOpen(true)}
-            >
-              Manage Materials
-            </button>
+            <div className="flex space-x-4 p-4">
+              <button
+                className="flex items-center bg-primary hover:bg-primary-hover text-foreground px-4 py-2 rounded focus:outline-none"
+                onClick={() => setIsModalOpen(true)}
+              >
+                Manage Materials
+              </button>
+              <button
+                className="flex items-center bg-primary hover:bg-primary-hover text-foreground px-4 py-2 rounded focus:outline-none"
+                onClick={() => router.back()}
+              >
+                ← Back
+              </button>
+            </div>
           </div>
 
           <div className="px-4 mt-4">
