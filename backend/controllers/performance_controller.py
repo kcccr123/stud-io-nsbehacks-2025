@@ -70,7 +70,7 @@ def recommend_questions(user_id):
     q_table = get_q_table(user_id)
     sorted_questions = sorted(q_table.items(), key=lambda x: min(x[1].values()))
     print(sorted_questions)
-    return [item[0] for item in sorted_questions[:1]]
+    return [item[0] for item in sorted_questions[:5]]
 
 # API endpoint to get recommended flashcards
 def get_recommended_flashcards(user_id):
