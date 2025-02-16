@@ -17,6 +17,7 @@ export default function ClassPage() {
 
   const [question, setQuestion] = useState("");
   const [flashcards, setFlashcards] = useState([]);
+  const [currentFlashcard, setCurrentFlashcard] = useState(null);
   const [recommendedFlashcard, SetRecommendedFlashcard] = useState(null);
   const [aiText, setAiText] = useState("Generate some questions!");
   const [answer, setAnswer] = useState("");
@@ -54,6 +55,7 @@ export default function ClassPage() {
   function handleNextQuestion() {
     if (flashcards.length > 0) {
       const nextFlashcard = flashcards.pop();
+      setCurrentFlashcard(nextFlashcard);
       setAiText(nextFlashcard.question);
       setFlashcards([...flashcards]);
     } else {
@@ -67,21 +69,35 @@ export default function ClassPage() {
     }
   }
 
-  function handleAnswer() {
+  async function handleAnswer() {
     if (!answer.trim()) {
       setAnswerError(true);
       return;
     }
     setAnswerError(false);
 
-    const data = {
-      question,
-      answer,
-    };
+    const formData = new FormData();
+    formData.append("chat_id", "CSC111");
+    formData.append("user_id", "67b0e038fede027c6a136c03");
+    formData.append("flashcard_id", currentFlashcard._id);
+    formData.append("question", aiText);
+    formData.append("answer", answer);
 
-    console.log(data);
+    try {
+      const response = await fetch("http://localhost:5000/answer", {
+        method: "POST",
+        body: formData,
+      });
 
-    setAiText(`Response to your answer: ${answer}`);
+      if (!response.ok) {
+        throw new Error("Failed to submit answer");
+      }
+
+      const result = await response.json();
+      setAiText(result.correct ? "Good job!" : result.correct_answer);
+    } catch (error) {
+      console.error("Error submitting answer:", error.message);
+    }
   }
 
   function handleFileUpload(event) {
@@ -275,6 +291,7 @@ export default function ClassPage() {
                 }`}
                 onClick={() => {
                   handleAnswer();
+                  setAnswer("");
                   setFlip(true);
                 }}
                 disabled={!answer.trim()}
