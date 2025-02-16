@@ -85,6 +85,7 @@ const Dashboard = () => {
             classes.map((cls) => (
               <div
                 key={cls.id}
+                onClick={() => handleClassClick(cls.id)}
                 className="relative bg-surface border border-gray-300 rounded-2xl p-4 flex items-center justify-center transform transition-transform duration-300 hover:scale-105 cursor-pointer shadow-lg w-80 h-48 group m-2"
               >
                 <button
@@ -109,7 +110,7 @@ const Dashboard = () => {
                 >
                   ✕
                 </button>
-                <div onClick={() => handleClassClick(cls.id)}>
+                <div>
                   <h2 className="text-2xl font-bold text-center text-foreground">
                     {cls.className}
                   </h2>

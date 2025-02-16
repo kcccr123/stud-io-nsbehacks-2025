@@ -19,7 +19,7 @@ async function fetchClass(id) {
 }
 
 async function fetchUnderstanding(id) {
-  return 78;
+  return 0;
 }
 
 export default function ClassPage() {
@@ -46,7 +46,9 @@ export default function ClassPage() {
   const [flashcards, setFlashcards] = useState([]);
   const [currentFlashcard, setCurrentFlashcard] = useState(null);
   const [recommendedFlashcard, SetRecommendedFlashcard] = useState(null);
-  const [aiText, setAiText] = useState("Generate some questions!");
+  const [aiText, setAiText] = useState(
+    "Add study materials in manage materials to get started."
+  );
   const [answer, setAnswer] = useState("");
   const [flip, setFlip] = useState(false);
   const [answerError, setAnswerError] = useState(false);
@@ -131,8 +133,18 @@ export default function ClassPage() {
       setAiText(
         result.correct ? "Good job!" : `Incorrect! ${result.correct_answer}`
       );
+      updateProgress(result.correct);
     } catch (error) {
       console.error("Error submitting answer:", error.message);
+    }
+  }
+
+  function updateProgress(correct) {
+    const step = 3;
+    if (correct) {
+      setProgress((prev) => Math.min(prev + step, 100));
+    } else {
+      setProgress((prev) => Math.max(prev - step, 0));
     }
   }
 
@@ -154,6 +166,15 @@ export default function ClassPage() {
       formData.append("user_request", question);
       formData.append("pdfs", selectedFile); // Key `pdfs` matches your backend expectation
 
+      // Create a loading indicator element
+      const loadingIndicator = document.createElement("div");
+      loadingIndicator.className =
+        "fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50";
+      loadingIndicator.innerHTML = `
+        <div class="animate-spin rounded-full h-32 w-32 border-t-4 border-b-4 border-white"></div>
+      `;
+      document.body.appendChild(loadingIndicator);
+
       try {
         let response;
 
@@ -172,6 +193,9 @@ export default function ClassPage() {
         if (!response.ok) {
           throw new Error("Upload failed");
         }
+
+        // Remove loading indicator
+        document.body.removeChild(loadingIndicator);
 
         const result = await response.json();
         console.log(result);
@@ -201,21 +225,6 @@ export default function ClassPage() {
   return (
     <>
       <style jsx>{`
-        @keyframes flip {
-          0% {
-            transform: rotateY(0);
-          }
-          50% {
-            transform: rotateY(90deg);
-          }
-          100% {
-            transform: rotateY(180deg);
-          }
-        }
-        .flip-animation {
-          animation: flip 0.6s ease-in-out;
-        }
-
         .disabled {
           background-color: grey;
           cursor: not-allowed;
@@ -248,7 +257,7 @@ export default function ClassPage() {
         }
       `}</style>
 
-      <div className="fixed flex flex-col top-0 right-0 p-4 bg-transparent text-foreground">
+      {/* <div className="fixed flex flex-col top-0 right-0 p-4 bg-transparent text-foreground">
         <input
           className="bg-transparent border-b border-foreground focus:outline-none text-foreground"
           type="number"
@@ -263,7 +272,7 @@ export default function ClassPage() {
           onChange={(e) => setAiText(e.target.value)}
           placeholder="Set ai text"
         />
-      </div>
+      </div> */}
 
       <nav className="min-h-screen w-screen flex justify-center items-start pt-10 bg-background">
         <div className="w-full max-w-3xl">
@@ -276,7 +285,23 @@ export default function ClassPage() {
                 className="flex items-center bg-blue-500 hover:bg-blue-700 hover text-foreground px-4 py-2 rounded focus:outline-none"
                 onClick={() => router.back()}
               >
-                ← Back
+                <div className="flex items-center gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                    className="size-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                    />
+                  </svg>
+                  <p>Back</p>
+                </div>
               </button>
               <button
                 className="flex items-center bg-blue-500 hover:bg-blue-700 text-foreground px-4 py-2 rounded focus:outline-none"
@@ -315,19 +340,91 @@ export default function ClassPage() {
             >
               <p>{aiText}</p>
             </div>
-            <input
-              className={`border p-2 rounded w-full mb-2 bg-background text-foreground ${
+            <div
+              className={`relative flex justify-center border p-2 rounded w-full mb-2 bg-background ${
                 answerError ? "error" : "border-foreground"
               }`}
-              placeholder="Your answer"
-              value={answer}
-              onChange={(e) => {
-                setAnswer(e.target.value);
-                if (e.target.value.trim()) {
-                  setAnswerError(false);
-                }
-              }}
-            />
+            >
+              <input
+                className={`outline-none p-2 rounded w-full mb-2 bg-background text-foreground ${
+                  answerError ? "error" : "border-foreground"
+                }`}
+                placeholder="Your answer"
+                value={answer}
+                onChange={(e) => {
+                  setAnswer(e.target.value);
+                  if (e.target.value.trim()) {
+                    setAnswerError(false);
+                  }
+                }}
+              />
+              <div
+                className="absolute right-12 top-1/2 -translate-y-1/2 rounded-full hover:bg-surface transition-transform transition-colors hover:scale-105 cursor-pointer p-2"
+                onClick={() => {
+                  if (!listening) {
+                    resetTranscript(); // Reset the transcript
+                    setAnswer(""); // Reset the answer state
+                    SpeechRecognition.startListening({ continuous: true });
+                  } else {
+                    SpeechRecognition.stopListening();
+                  }
+                }}
+              >
+                {listening ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                    className="size-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5.25 7.5A2.25 2.25 0 0 1 7.5 5.25h9a2.25 2.25 0 0 1 2.25 2.25v9a2.25 2.25 0 0 1-2.25 2.25h-9a2.25 2.25 0 0 1-2.25-2.25v-9Z"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                    className="size-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z"
+                    />
+                  </svg>
+                )}
+              </div>
+              <div
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full hover:bg-surface transition-transform transition-colors hover:scale-105 cursor-pointer p-2"
+                onClick={() => {
+                  resetTranscript();
+                  setAnswer("");
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  className="size-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                  />
+                </svg>
+              </div>
+            </div>
             <div className="flex justify-center space-x-4">
               {studyNotification && (
                 <div className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded-lg shadow-lg w-64">
@@ -347,7 +444,7 @@ export default function ClassPage() {
                 </div>
               )}
               <button
-                className="px-6 py-2 w-40  bg-blue-500 text-foreground rounded hover:bg-blue-700 focus:outline-none text-center"
+                className="px-6 py-2 w-40 h-12 bg-blue-500 text-foreground rounded hover:bg-blue-700 focus:outline-none text-center"
                 onClick={() => {
                   handleNextQuestion();
                   setFlip(true);
@@ -356,7 +453,7 @@ export default function ClassPage() {
                 Next Question
               </button>
               <button
-                className={`px-6 py-2 w-40 bg-surface text-foreground rounded hover:bg-blue-800 hover focus:outline-none text-center ${
+                className={`px-6 py-2 w-40 h-12 bg-surface text-foreground rounded hover:bg-blue-800 hover focus:outline-none text-center ${
                   !answer.trim() ? "disabled" : ""
                 }`}
                 onClick={() => {
@@ -369,7 +466,7 @@ export default function ClassPage() {
               >
                 Answer
               </button>
-              <p className="text-foreground font-semibold bg-surface px-2 py-2 rounded-lg shadow-md flex items-center justify-center text-center gap-2">
+              {/* <p className="text-foreground font-semibold bg-surface px-2 py-2 rounded-lg shadow-md flex items-center justify-center text-center gap-2">
                 {listening ? (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -408,9 +505,9 @@ export default function ClassPage() {
                   </svg>
                 )}
                 Microphone {listening ? "Unmuted" : "Muted"}
-              </p>
+              </p> */}
 
-              <button
+              {/* <button
                 onClick={() => {
                   resetTranscript(); // Reset the transcript
                   setAnswer(""); // Reset the answer state
@@ -435,15 +532,38 @@ export default function ClassPage() {
                 className="ml-2 bg-gray-500 text-white hover:bg-gray-700 focus:outline-none p-2 rounded"
               >
                 🔄 Reset
-              </button>
-              <button
+              </button> */}
+              {/* <button
                 onClick={() => setIsReviewMode((prev) => !prev)}
                 className="px-6 py-2 w-40 bg-blue-500 text-foreground rounded hover:bg-blue-700 focus:outline-none text-center"
               >
                 {isReviewMode
                   ? "Switch to Study Mode"
                   : "Switch to Review Mode"}
-              </button>
+              </button> */}
+              <div className="flex items-center">
+                <button
+                  onClick={() => setIsReviewMode((prev) => !prev)}
+                  className={`relative w-40 h-12 bg-gray-400 rounded p-1 transition-colors flex items-center justify-between px-1 ${
+                    isReviewMode ? "bg-blue-500" : "bg-green-500"
+                  }`}
+                >
+                  <span
+                    className={`text-xs font-medium text-white transition-all ${
+                      isReviewMode
+                        ? "order-last translate-x-4"
+                        : "order-first translate-x-16"
+                    }`}
+                  >
+                    {isReviewMode ? "Review Mode" : "Study Mode"}
+                  </span>
+                  <span
+                    className={`absolute w-6 h-10 bg-white rounded shadow-md transition-transform transform ${
+                      isReviewMode ? "translate-x-32" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
         </div>
