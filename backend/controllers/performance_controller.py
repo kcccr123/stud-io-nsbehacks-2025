@@ -5,6 +5,7 @@ from flask import jsonify, request
 from utils.db import performance_collection  # New collection for performance data
 from utils.db import flashcard_collection, performance_collection
 import numpy as np
+import openai
 from collections import defaultdict
 ALPHA = 0.1  # Learning rate
 GAMMA = 0.9  # Discount factor
@@ -100,3 +101,105 @@ def log_user_performance(user_id):
     reward = data.get("reward", 0)
     update_q_table(user_id, flashcard_id, action, reward)
     return jsonify({"message": "Performance logged successfully"}), 200
+
+
+
+def get_flashcard_topic(flashcard):
+    """
+    Use an LLM to determine the topic of the flashcard.
+    The flashcard is expected to have a "question" field and optionally an "answer" field.
+    """
+    # Combine the flashcard content to form a prompt.
+    content = flashcard.get("question", "")
+    if flashcard.get("answer"):
+        content += "\n" + flashcard["answer"]
+    
+    prompt = (
+        "Determine the main topic or subject of the following flashcard content. "
+        "Return only a short phrase as the topic.\n\n"
+        f"Content: {content}"
+    )
+    
+    try:
+        response = openai.Completion.create(
+            model="text-davinci-003",
+            prompt=prompt,
+            max_tokens=10,
+            temperature=0.5,
+        )
+        topic = response.choices[0].text.strip()
+        return topic
+    except Exception as e:
+        print(f"LLM API error: {e}")
+        return "Unknown"
+
+def get_top_failed_flashcard(user_id, threshold=1.0):
+    """
+    Determine the flashcard that the user has struggled with the most.
+
+    For each flashcard, a performance score is computed as:
+        score = correct - incorrect
+    (A lower score indicates poorer performance.)
+
+    This function selects the flashcard with the lowest score and, if that score
+    is below the specified threshold, it sends the flashcard content to the LLM to
+    determine its topic. The topic is then returned in the response.
+
+    Parameters:
+        user_id (str): The user's ID.
+        threshold (float): The failure threshold. If the top flashcard's score is below this,
+                           it indicates the user is struggling with that flashcard.
+
+    Returns:
+        JSON response with:
+            - The flashcard details,
+            - Its performance score, and
+            - The topic determined by the LLM.
+        Otherwise, a message indicating no flashcards have crossed the failure threshold.
+    """
+    print("FLAGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
+    q_table = get_q_table(user_id)
+    flashcard_scores = []
+    
+    # Calculate performance scores for each flashcard.
+    for flashcard_id, actions in q_table.items():
+        score = actions.get("correct", 0.0) - actions.get("incorrect", 0.0)
+        try:
+            flashcard = flashcard_collection.find_one({"_id": ObjectId(flashcard_id)})
+            if flashcard:
+                flashcard_scores.append({
+                    "flashcard_id": flashcard_id,
+                    "score": score,
+                    "flashcard": flashcard
+                })
+        except InvalidId:
+            print(f"Invalid ObjectId encountered: {flashcard_id}")
+            continue
+    
+    # If no flashcards are found, return an informative message.
+    if not flashcard_scores:
+        return jsonify({"message": "No flashcard data available."}), 200
+    
+    # Sort flashcards by their performance score (lowest first).
+    flashcard_scores_sorted = sorted(flashcard_scores, key=lambda x: x["score"])
+    top_failed = flashcard_scores_sorted[0]
+    
+    # Check if the worst flashcard's score has crossed the failure threshold.
+    if top_failed["score"] < threshold:
+        flashcard = top_failed["flashcard"]
+        # Convert ObjectId to string for JSON serialization.
+        flashcard["_id"] = str(flashcard["_id"])
+        
+        # Use the LLM to determine the flashcard topic.
+        topic = get_flashcard_topic(flashcard)
+        
+        return jsonify({
+            "topic": topic
+        }), 200
+    else:
+        return jsonify({
+            "message": "No flashcards have crossed the failure threshold."
+        }), 200
+
+
+

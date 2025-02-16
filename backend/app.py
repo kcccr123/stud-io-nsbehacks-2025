@@ -6,7 +6,7 @@ import json
 from dotenv import load_dotenv
 from controllers.user_controller import register_user, login_user, save_rl_data, get_rl_data
 from controllers.flashcards_controller import get_flashcards, get_flashcard, add_flashcard, update_flashcard, delete_flashcard, find_similar_flashcards, add_flashcard_func
-from controllers.performance_controller import get_performance, add_update_performance, delete_performance, get_q_table, log_user_performance, get_recommended_flashcards, update_q_table
+from controllers.performance_controller import get_performance, add_update_performance, delete_performance, get_q_table, log_user_performance, get_recommended_flashcards, update_q_table, get_top_failed_flashcard
 from utils.db import db
 from api.gpt import question
 from flask_cors import CORS
@@ -120,10 +120,11 @@ def question_study():
     Generates flashcards via ChatGPT in JSON format, parses them, and
     stores each one in MongoDB using add_flashcard_func.
     """
-
+    
     chat_id = request.form.get("chat_id", None)
     user_id = request.form.get("user_id", None)
     user_request = request.form.get("user_request", "").strip()  # Get user request
+
 
     if not chat_id:
         return jsonify({"error": "Missing chat_id."}), 400
@@ -187,7 +188,7 @@ def question_study():
     print("\n============ GPT Reply ============")
     print(f"""\"\"\"{assistant_reply}\"\"\"""")
     print("===================================\n")
-
+    print('whats goign on???????')
     # 4. Parse JSON flashcards
     try:
         flashcards = json.loads(assistant_reply)
@@ -203,12 +204,32 @@ def question_study():
 
         # 6. Select one flashcard to return
         selected_flashcard = random.choice(flashcards) if flashcards else None
-
-        return jsonify({
-            "flashcards_added": flashcards_added,
-            "flashcards": flashcards,  # Full set of generated flashcards
-            "selected_flashcard": selected_flashcard  # Returns one flashcard
-        }), 200
+        print('whats goign on???????')
+        # Call the function and unpack the response
+        response_obj, status_code = get_top_failed_flashcard(user_id, 1.0)
+        # Extract the JSON data (a dict) from the response
+        res_data = response_obj.get_json()
+        print(res_data, 'HELASHLAWLWDAWDAWDAWDAWDAWD')
+        if res_data and "topic" in res_data:
+            print('heloooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo')
+            print( { 
+                "flashcards_added": flashcards_added,
+                "flashcards": flashcards,  # Full set of generated flashcards
+                "selected_flashcard": selected_flashcard,  # Returns one flashcard
+                "topic": res_data["topic"]
+            })
+            return jsonify({ 
+                "flashcards_added": flashcards_added,
+                "flashcards": flashcards,  # Full set of generated flashcards
+                "selected_flashcard": selected_flashcard,  # Returns one flashcard
+                "topic": res_data["topic"]
+            }), 200
+        else:
+            return jsonify({
+                "flashcards_added": flashcards_added,
+                "flashcards": flashcards,
+                "selected_flashcard": selected_flashcard,
+            }), 200
 
     except (json.JSONDecodeError, ValueError) as e:
         return jsonify({
