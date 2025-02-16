@@ -101,6 +101,7 @@ export default function ClassPage() {
   async function handleAnswer() {
     if (!answer.trim()) {
       setAnswerError(true);
+      resetTranscript();
       return;
     }
     setAnswerError(false);
@@ -122,8 +123,12 @@ export default function ClassPage() {
         throw new Error("Failed to submit answer");
       }
 
+      setAnswer("");
+
       const result = await response.json();
-      setAiText(result.correct ? "Good job!" : result.correct_answer);
+      setAiText(
+        result.correct ? "Good job!" : `Incorrect! ${result.correct_answer}`
+      );
     } catch (error) {
       console.error("Error submitting answer:", error.message);
     }
@@ -142,7 +147,7 @@ export default function ClassPage() {
     console.log(question);
     if (selectedFile) {
       const formData = new FormData();
-      formData.append("chat_id", "CSC111");
+      formData.append("chat_id", "id");
       formData.append("user_id", "67b0e038fede027c6a136c03");
       formData.append("user_request", question);
       formData.append("pdfs", selectedFile); // Key `pdfs` matches your backend expectation
@@ -161,8 +166,10 @@ export default function ClassPage() {
             body: formData,
           });
 
-          setStudyNotification(true);
-          setTopic(response.topic);
+          if (response.topic !== null) {
+            setStudyNotification(true);
+            setTopic(response.topic);
+          }
         }
 
         if (!response.ok) {
@@ -172,7 +179,7 @@ export default function ClassPage() {
         const result = await response.json();
         console.log("Upload successful:", result);
         setFlashcards(result.flashcards);
-        SetRecommendedFlashcard(result.recommended_flashcard);
+        SetRecommendedFlashcard(result.selected_flashcard);
         setUploadedFiles((prevFiles) => [...prevFiles, selectedFile]);
         setSelectedFile(null);
       } catch (error) {
@@ -353,6 +360,7 @@ export default function ClassPage() {
                 onClick={() => {
                   handleAnswer();
                   setAnswer("");
+
                   setFlip(true);
                 }}
                 disabled={!answer.trim()}
@@ -401,21 +409,27 @@ export default function ClassPage() {
               </p>
 
               <button
-                onClick={() =>
-                  SpeechRecognition.startListening({ continuous: true })
-                }
+                onClick={() => {
+                  resetTranscript(); // Reset the transcript
+                  setAnswer(""); // Reset the answer state
+                  SpeechRecognition.startListening({ continuous: true });
+                }}
                 className="ml-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-700 focus:outline-none"
               >
                 🎤 Start Recording
               </button>
               <button
-                onClick={SpeechRecognition.stopListening}
+                onClick={() => {
+                  SpeechRecognition.stopListening();
+                }}
                 className="ml-2 bg-red-500 text-white p-2 rounded hover:bg-red-700 focus:outline-none"
               >
                 ⏹ Stop
               </button>
               <button
-                onClick={resetTranscript}
+                onClick={() => {
+                  resetTranscript(); // Reset transcript when stopping the recording
+                }}
                 className="ml-2 bg-gray-500 text-white hover:bg-gray-700 focus:outline-none p-2 rounded"
               >
                 🔄 Reset
