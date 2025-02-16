@@ -10,6 +10,7 @@ from controllers.performance_controller import get_performance, add_update_perfo
 from utils.db import db
 from api.gpt import question
 from flask_cors import CORS
+import random
 from openai import OpenAI
 
 
@@ -22,6 +23,200 @@ chats = {}
 load_dotenv()
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
+def question_review():
+    """
+    Generates a new flashcard based on recommended flashcards for the user.
+    Expects:
+      - "chat_id" to maintain conversation context.
+      - "user_id" for personalized recommendations.
+    Returns:
+      - A newly generated flashcard in JSON format.
+    """
+
+    chat_id = request.form.get("chat_id", None)
+    user_id = request.form.get("user_id", None)
+
+    if not chat_id:
+        return jsonify({"error": "Missing chat_id."}), 400
+    if not user_id:
+        return jsonify({"error": "Missing user_id."}), 400
+
+    # 1. Fetch Recommended Flashcards
+    recommended_flashcards = get_recommended_flashcards(user_id)
+    print(recommended_flashcards)
+    if not recommended_flashcards:
+        return jsonify({"error": "No recommended flashcards found for this user."}), 400
+
+    # 2. Format Data for GPT
+    formatted_recommendations = "\n".join([
+        f"- Q: {fc['question']} A: {fc['answer']}" for fc in recommended_flashcards
+    ])
+
+    # 3. Prepare ChatGPT prompt
+    system_prompt = (
+        "You are an AI that generates a new, unique flashcard based on previous flashcards. "
+        "Use the given recommended flashcards to generate a new, challenging question and its answer. "
+        "Ensure the output is a valid JSON object with keys: question, answer, topic, difficulty. "
+        "Output ONLY valid JSON. No markdown formatting. Example format:\n"
+        '{\n  "question": "What is the significance of backpropagation in neural networks?",\n'
+        '  "answer": "Backpropagation is an optimization algorithm that updates weights to minimize error in training.",\n'
+        '  "topic": "Machine Learning",\n  "difficulty": "Medium"\n}'
+    )
+
+    user_prompt = f"Here are previous flashcards:\n{formatted_recommendations}\nGenerate a new flashcard."
+
+    # Maintain chat history
+    if chat_id not in chats:
+        chats[chat_id] = [{"role": "system", "content": system_prompt}]
+
+    chats[chat_id].append({"role": "user", "content": user_prompt})
+
+    # 4. Call ChatGPT
+    client = OpenAI(api_key=openai_api_key)
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=chats[chat_id],
+    )
+    assistant_reply = response.choices[0].message.content
+
+    # Debug Print
+    print("\n============ GPT Reply ============")
+    print(f"""\"\"\"{assistant_reply}\"\"\"""")
+    print("===================================\n")
+
+    # 5. Parse JSON flashcard
+    try:
+        new_flashcard = json.loads(assistant_reply)
+        if not isinstance(new_flashcard, dict) or "question" not in new_flashcard:
+            raise ValueError("Invalid flashcard format received.")
+
+        # 6. Insert the new flashcard into the database
+        resp, status_code = add_flashcard_func(new_flashcard)
+        if status_code != 201:
+            return jsonify({"error": "Failed to save the new flashcard."}), 500
+
+        # 7. Return the generated flashcard
+        return jsonify({
+            "generated_flashcard": new_flashcard,
+            "recommended_flashcards_used": recommended_flashcards
+        }), 200
+
+    except (json.JSONDecodeError, ValueError) as e:
+        return jsonify({
+            "error": "Could not parse the generated flashcard JSON.",
+            "raw_reply": assistant_reply,
+            "exception": str(e)
+        }), 500
+    
+
+def question_study():
+    """
+    Expects:
+      - multipart/form-data with:
+          - PDF files under the field "pdfs" (optional)
+          - A "chat_id" to identify conversation
+          - A "user_id" for personalized recommendations
+          - A "user_request" to specify type of flashcards (e.g., multiple choice, word problems, specific topic)
+    Generates flashcards via ChatGPT in JSON format, parses them, and
+    stores each one in MongoDB using add_flashcard_func.
+    """
+
+    chat_id = request.form.get("chat_id", None)
+    user_id = request.form.get("user_id", None)
+    user_request = request.form.get("user_request", "").strip()  # Get user request
+
+    if not chat_id:
+        return jsonify({"error": "Missing chat_id."}), 400
+    if not user_id:
+        return jsonify({"error": "Missing user_id."}), 400
+
+    # 1. Extract PDFs (if provided)
+    extracted_text = ""
+    if "pdfs" in request.files:
+        files = request.files.getlist("pdfs")
+        for file in files:
+            if file.filename.lower().endswith(".pdf"):
+                try:
+                    file_bytes = file.read()
+                    reader = PdfReader(io.BytesIO(file_bytes))
+                    for page in reader.pages:
+                        page_text = page.extract_text()
+                        if page_text:
+                            extracted_text += page_text + "\n"
+                except Exception as e:
+                    return jsonify({"error": f"Error processing {file.filename}: {str(e)}"}), 500
+            else:
+                return jsonify({"error": f"File {file.filename} is not a PDF."}), 400
+
+    # If no PDFs provided, ensure we have some content to work with
+    if not extracted_text.strip() and not user_request:
+        return jsonify({"error": "No PDFs provided and no user request specified."}), 400
+
+    # 2. Construct GPT prompt
+    system_prompt = (
+        "You are a helpful AI that generates flashcards. Based on the provided content and user request, "
+        "create 20 flashcards in JSON format. Each flashcard should contain: question, topic, difficulty. "
+        "Make the flashcard questions varied and unique and good for practicing students. Try and cover as much of the content"
+        "in the provided PDF's as possible and make sure to fufill the user request "
+        "Format the output as valid JSON, and do NOT include Markdown formatting like ```json or ```."
+    )
+
+    # Include extracted text from PDFs if available
+    prompt_content = extracted_text if extracted_text.strip() else ""
+    
+    # Include user request (e.g., multiple choice, specific focus area)
+    if user_request:
+        prompt_content += f"\n\nUser Request: {user_request}"
+
+    # Maintain chat history
+    if chat_id not in chats:
+        chats[chat_id] = [{"role": "system", "content": system_prompt}]
+
+    chats[chat_id].append({"role": "user", "content": prompt_content})
+
+    # 3. Call ChatGPT
+    client = OpenAI(api_key=openai_api_key)
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=chats[chat_id],
+    )
+    assistant_reply = response.choices[0].message.content
+    chats[chat_id].append({"role": "assistant", "content": assistant_reply})
+
+    # Debug print
+    print("\n============ GPT Reply ============")
+    print(f"""\"\"\"{assistant_reply}\"\"\"""")
+    print("===================================\n")
+
+    # 4. Parse JSON flashcards
+    try:
+        flashcards = json.loads(assistant_reply)
+        if not isinstance(flashcards, list):
+            raise ValueError("Expected a JSON array of flashcards.")
+
+        # 5. Insert each flashcard into the DB using the new function
+        flashcards_added = 0
+        for fc in flashcards:
+            resp, status_code = add_flashcard_func(fc)
+            if status_code == 201:
+                flashcards_added += 1
+
+        # 6. Select one flashcard to return
+        selected_flashcard = random.choice(flashcards) if flashcards else None
+
+        return jsonify({
+            "flashcards_added": flashcards_added,
+            "flashcards": flashcards,  # Full set of generated flashcards
+            "selected_flashcard": selected_flashcard  # Returns one flashcard
+        }), 200
+
+    except (json.JSONDecodeError, ValueError) as e:
+        return jsonify({
+            "error": "Could not parse JSON flashcards from GPT response.",
+            "raw_reply": assistant_reply,
+            "exception": str(e)
+        }), 500
+ 
 def question():
     """
     Expects:
@@ -256,6 +451,9 @@ app.add_url_rule('/flashcards/<flashcard_id>', 'update_flashcard', update_flashc
 app.add_url_rule('/flashcards/<flashcard_id>', 'delete_flashcard', delete_flashcard, methods=['DELETE'])
 app.add_url_rule('/flashcards/similar', 'find_similar_flashcards', find_similar_flashcards, methods=['GET'])
 
+
+app.add_url_rule('/question/review', 'question_review', question_review, methods=['POST'])
+app.add_url_rule('/question/study', 'question_study', question_study, methods=['POST'])
 app.add_url_rule('/question', 'question', question, methods=['POST'])
 app.add_url_rule('/answer', 'answer', answer, methods=['POST'])
 
