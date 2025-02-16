@@ -82,7 +82,13 @@ def get_recommended_flashcards(user_id):
                 valid_ids.append(ObjectId(i))
             except InvalidId:
                 print(f"Invalid ObjectId skipped: {i}")
-        results = list(flashcard_collection.find({"_id": {"$in": valid_ids}}, {"_id": 0, "question": 1, "answer": 1}))
+
+        results = list(flashcard_collection.find({"_id": {"$in": valid_ids}}, {"_id": 1, "question": 1, "answer": 1}))
+
+        # Convert ObjectId to string
+        for result in results:
+            result['_id'] = str(result['_id'])
+
         return results  # Return data directly, not jsonify
     except Exception as e:
         return {"error": str(e)}
