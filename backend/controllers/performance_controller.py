@@ -72,21 +72,25 @@ def recommend_questions(user_id):
     print(sorted_questions)
     return [item[0] for item in sorted_questions[:5]]
 
-# API endpoint to get recommended flashcards
 def get_recommended_flashcards(user_id):
     try:
         recommended_ids = recommend_questions(user_id)
-        # Filter out invalid ObjectIds
         valid_ids = []
         for i in recommended_ids:
             try:
                 valid_ids.append(ObjectId(i))
             except InvalidId:
                 print(f"Invalid ObjectId skipped: {i}")
-        (flashcard_collection.find({"_id": {"$in": valid_ids}}, {"_id": 0, "question": 1, "answer": 1}))
-        return jsonify(results), 200
+
+        results = list(flashcard_collection.find({"_id": {"$in": valid_ids}}, {"_id": 1, "question": 1, "answer": 1}))
+
+        # Convert ObjectId to string
+        for result in results:
+            result['_id'] = str(result['_id'])
+
+        return results  # Return data directly, not jsonify
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return {"error": str(e)}
 
 # Log user performance and update Q-table
 def log_user_performance(user_id):
