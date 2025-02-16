@@ -12,6 +12,7 @@ export default {
         surface: "#252537", // Slightly lighter surface color
         foreground: "#CDD6F4", // Default text color
         muted: "#A6ADC8", // Muted text
+        disabled: "#6C728C", // Disabled text
 
         primary: {
           DEFAULT: "#89B4FA", // Base blue for buttons, links
