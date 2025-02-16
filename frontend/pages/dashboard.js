@@ -86,7 +86,7 @@ const Dashboard = () => {
                 className="relative bg-surface border border-gray-300 rounded-2xl p-8 flex items-center justify-center transform transition-transform duration-300 hover:scale-105 cursor-pointer shadow-lg w-72 h-40 group"
               >
                 <button
-                  className="absolute top-4 left-4 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-4 left-4 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 flex items-center justify-center"
                   onClick={(e) => {
                     e.stopPropagation();
                     fetch(`http://localhost:5000/classes/${cls.id}`, {
