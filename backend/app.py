@@ -42,7 +42,7 @@ def question():
                     "Generate 10 flashcards in valid JSON format, with each flashcard containing "
                     "the keys: question, answer, topic, difficulty. Return ONLY VALID JSON, WHICH CAN BE USED WITH json.loads() e.g.:\n"
                     "without any Markdown code block formatting. Do NOT include ```json or ```."
-                    "[\n  {\n    \"question\": \"...\",\n    \"answer\": \"...\",\n    \"topic\": \"...\",\n    \"difficulty\": \"...\"\n  },\n  ...\n]"
+                    "[\n  {\n    \"question\": \"...\",\n   \"topic\": \"...\",\n    \"difficulty\": \"...\"\n  },\n  ...\n]"
                 )
             }
         ]

@@ -8,7 +8,7 @@ import io
 from PyPDF2 import PdfReader
 import json
 
-# Import the refactored function
+# Import the refactored function    
 from controllers.flashcards_controller import add_flashcard_func
 
 # Load environment variables
