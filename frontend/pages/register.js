@@ -50,8 +50,29 @@ export default function RegisterPage() {
     }
   };
 
-  const handleRegister = (data) => {
-    console.log("Registration Data:", data);
+  const handleRegister = async (data) => {
+    try {
+      const response = await fetch("http://127.0.0.1:5000/users/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: data.email,
+          username: data.username,
+          password: data.password,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Registration failed");
+      }
+
+      const result = await response.json();
+      console.log("Registration successful:", result);
+    } catch (error) {
+      console.error("Error during registration:", error.message);
+    }
   };
 
   const handleChange = (e) => {
@@ -72,6 +93,7 @@ export default function RegisterPage() {
     if (step < 3) {
       setStep((prev) => prev + 1);
     } else {
+      console.log(formData);
       handleRegister(formData);
     }
   };
@@ -216,7 +238,7 @@ export default function RegisterPage() {
               <button
                 onClick={() => {
                   setErrorMsg("");
-                  setStep((prev) => prev - 1);
+                  handleRegister(formData);
                 }}
                 className="bg-muted w-16 text-foreground px-4 py-2 rounded hover:bg-muted-dark transition"
               >
