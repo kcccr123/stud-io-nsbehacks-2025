@@ -9,8 +9,11 @@ from controllers.flashcards_controller import get_flashcards, get_flashcard, add
 from controllers.performance_controller import get_performance, add_update_performance, delete_performance, get_q_table, log_user_performance, get_recommended_flashcards
 from utils.db import db
 from api.gpt import question
+from flask_cors import CORS
+
 
 app = Flask(__name__)
+CORS(app)
 
 chats = {}
 
@@ -157,3 +160,4 @@ app.add_url_rule('/performance/<user_id>/recommendations', 'get_recommended_flas
 
 if __name__ == "__main__":
     app.run(debug=True)
+    
