@@ -81,10 +81,32 @@ export default function ClassPage() {
     setSelectedFile(event.target.files[0]);
   }
 
-  function handleUpload() {
+  async function handleUpload() {
+    console.log(question);
     if (selectedFile) {
-      setUploadedFiles((prevFiles) => [...prevFiles, selectedFile]);
-      setSelectedFile(null);
+      const formData = new FormData();
+      formData.append("chat_id", "12345");
+      formData.append("user_id", "67b0e038fede027c6a136c03");
+      formData.append("user_request", question);
+      formData.append("pdfs", selectedFile); // Key `pdfs` matches your backend expectation
+
+      try {
+        const response = await fetch("http://localhost:5000/question", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const result = await response.json();
+        console.log("Upload successful:", result);
+        setUploadedFiles((prevFiles) => [...prevFiles, selectedFile]);
+        setSelectedFile(null);
+      } catch (error) {
+        console.error("Error during upload:", error.message);
+      }
     }
   }
 
@@ -193,12 +215,6 @@ export default function ClassPage() {
           </div>
 
           <div className="px-4 mt-6">
-            <input
-              className="border border-foreground p-2 rounded w-full mb-4 bg-background text-foreground"
-              placeholder="what would you like to work on"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-            />
             <div
               className={`flex items-center justify-center border border-foreground p-2 rounded bg-background text-foreground mb-4 h-80 ${
                 flip ? "flip-animation" : ""
@@ -253,6 +269,12 @@ export default function ClassPage() {
             className="modal-content flex flex-col items-center gap-4 bg-surface"
             onClick={(e) => e.stopPropagation()}
           >
+            <input
+              className="border border-foreground p-2 rounded w-full mb-4 bg-background text-foreground"
+              placeholder="what would you like to work on"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+            />
             <h2 className="mb-4 text-2xl">Upload Course Material</h2>
             <label
               className="border rounded p-2 inline-block cursor-pointer min-w-32"
