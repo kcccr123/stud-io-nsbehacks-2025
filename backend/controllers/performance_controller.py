@@ -105,72 +105,53 @@ def log_user_performance(user_id):
 
 def get_top_failed_flashcard(user_id, threshold=1.0):
     """
-    Determine the flashcard that the user has struggled with the most.
+    Determine the flashcard that the user has struggled with the most,
+    using the same vector search approach as recommend_questions.
 
-    For each flashcard, a performance score is computed as:
-        score = correct - incorrect
-    (A lower score indicates poorer performance.)
-
-    This function selects the flashcard with the lowest score and, if that score
-    is below the specified threshold, retrieves its topic directly from the flashcard.
-    The topic is then returned in the response.
+    For each flashcard, we assume the Q-table stores an action dictionary.
+    We rank flashcards by the minimum value in this dictionary (i.e., the worst performance).
+    If the worst score is below the specified threshold, the flashcard is considered failed,
+    and its topic is returned.
 
     Parameters:
         user_id (str): The user's ID.
-        threshold (float): The failure threshold. If the top flashcard's score is below this,
+        threshold (float): The failure threshold. If the worst flashcard's score is below this,
                            it indicates the user is struggling with that flashcard.
 
     Returns:
         JSON response with:
             - The flashcard's topic (taken directly from the flashcard),
-        Otherwise, a message indicating no flashcards have crossed the failure threshold.
+        Otherwise, a message indicating no flashcards have crossed the failure threshold or
+        that no performance data is available.
     """
-    q_table = get_q_table(user_id)
-    flashcard_scores = []
-    print("TEST0")
-    # Calculate performance scores for each flashcard.
-    for flashcard_id, actions in q_table.items():
-        print("TEST1")
-        score = actions.get("correct", 0.0) - actions.get("incorrect", 0.0)
-        try:
-            flashcard = flashcard_collection.find_one({"_id": ObjectId(flashcard_id)})
-            if flashcard:
-                flashcard_scores.append({
-                    "flashcard_id": flashcard_id,
-                    "score": score,
-                    "flashcard": flashcard
-                })
-        except InvalidId:
-            print(f"Invalid ObjectId encountered: {flashcard_id}")
-            continue
+    q_table = get_q_table(user_id)  # This returns a defaultdict, even if empty.
     
-    # If no flashcards are found, return an informative message.
-    print("TEST2")
-    if not flashcard_scores:
-        print("TEST3")
-        return jsonify({"message": "No flashcard data available."}), 200
-    print("TEST4")
-    # Sort flashcards by their performance score (lowest first).
-    flashcard_scores_sorted = sorted(flashcard_scores, key=lambda x: x["score"])
-    top_failed = flashcard_scores_sorted[0]
-    print("TEST5")
+    # Use the same vector search ranking as in recommend_questions.
+    # We also handle the case where an action dictionary might be empty.
+    sorted_questions = sorted(
+        q_table.items(), 
+        key=lambda x: min(x[1].values()) if x[1] else float('inf')
+    )
     
-    # Check if the worst flashcard's score has crossed the failure threshold.
-    print(top_failed["flashcard"], 'worst flash card is here')
-    if top_failed["score"] < threshold:
-        flashcard = top_failed["flashcard"]
-        # Convert ObjectId to string for JSON serialization.
-        flashcard["_id"] = str(flashcard["_id"])
-        
-        # Directly extract the topic from the flashcard.
-        topic = flashcard.get("topic", "Unknown")
-        
-        return jsonify({
-            "topic": topic
-        }), 200
-    else:
-        return jsonify({
-            "message": "No flashcards have crossed the failure threshold."
-        }), 200
+    # If sorted_questions is empty or contains only empty dictionaries, no performance data exists.
+    if not sorted_questions or (sorted_questions and not sorted_questions[0][1]):
+        print('no performance data')
+        return jsonify({"message": "No flashcard performance data available."}), 200
 
+    top_failed_id, top_failed_actions = sorted_questions[0]
+    worst_score = min(top_failed_actions.values())
+    
+    # Check if the worst score is below the threshold.
+    if worst_score < threshold:
+        flashcard = flashcard_collection.find_one({"_id": ObjectId(top_failed_id)})
+        if flashcard:
+            # Ensure ObjectId is converted for JSON serialization.
+            flashcard["_id"] = str(flashcard["_id"])
+            # Get the topic directly from the flashcard (assumes a 'topic' field exists).
+            topic = flashcard.get("topic", "Unknown")
+            return jsonify({"topic": topic}), 200
+        else:
+            return jsonify({"message": "Flashcard not found."}), 404
+    else:
+        return jsonify({"message": "No flashcards have crossed the failure threshold."}), 200
 
