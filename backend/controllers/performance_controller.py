@@ -4,6 +4,7 @@ from bson.objectid import ObjectId, InvalidId
 from flask import jsonify, request
 from utils.db import performance_collection  # New collection for performance data
 from utils.db import flashcard_collection, performance_collection
+from controllers.flashcards_controller import get_flashcard
 import numpy as np
 import openai
 from collections import defaultdict
@@ -83,7 +84,7 @@ def get_recommended_flashcards(user_id):
             except InvalidId:
                 print(f"Invalid ObjectId skipped: {i}")
 
-        results = list(flashcard_collection.find({"_id": {"$in": valid_ids}}, {"_id": 1, "question": 1, "answer": 1}))
+        results = list(flashcard_collection.find({"_id": {"$in": valid_ids}}, {"_id": 1, "question": 1, "topic": 1}))
 
         # Convert ObjectId to string
         for result in results:
@@ -103,7 +104,7 @@ def log_user_performance(user_id):
     return jsonify({"message": "Performance logged successfully"}), 200
 
 
-def get_top_failed_flashcard(user_id, threshold=1.0):
+def get_top_failed_flashcard(user_id, threshold):
     """
     Determine the flashcard that the user has struggled with the most,
     using the same vector search approach as recommend_questions.
@@ -144,6 +145,9 @@ def get_top_failed_flashcard(user_id, threshold=1.0):
     # Check if the worst score is below the threshold.
     if worst_score < threshold:
         flashcard = flashcard_collection.find_one({"_id": ObjectId(top_failed_id)})
+        # If flashcard is returned as a tuple, extract the dictionary.
+        if isinstance(flashcard, tuple):
+            flashcard = flashcard[0]
         if flashcard:
             # Ensure ObjectId is converted for JSON serialization.
             flashcard["_id"] = str(flashcard["_id"])
@@ -154,4 +158,3 @@ def get_top_failed_flashcard(user_id, threshold=1.0):
             return jsonify({"message": "Flashcard not found."}), 404
     else:
         return jsonify({"message": "No flashcards have crossed the failure threshold."}), 200
-
