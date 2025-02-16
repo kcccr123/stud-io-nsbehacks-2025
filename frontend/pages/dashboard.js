@@ -57,7 +57,7 @@ const Dashboard = () => {
       <nav className="bg-surface p-4 shadow-md flex items-center justify-between">
         <h1 className="text-2xl font-bold">{PROJECT_NAME}</h1>
         <button
-          className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded flex items-center"
+          className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center"
           onClick={() => setIsModalOpen(true)}
         >
           <svg
@@ -140,7 +140,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={handleJoinClass}
-                className="bg-primary text-white px-4 py-2 rounded"
+                className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded"
               >
                 Join
               </button>

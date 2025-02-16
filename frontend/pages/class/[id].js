@@ -264,13 +264,13 @@ export default function ClassPage() {
             </h1>
             <div className="flex space-x-4 p-4">
               <button
-                className="flex items-center bg-primary hover:bg-primary-hover text-foreground px-4 py-2 rounded focus:outline-none"
+                className="flex items-center bg-blue-500 hover:bg-blue-700 hover text-foreground px-4 py-2 rounded focus:outline-none"
                 onClick={() => router.back()}
               >
                 ← Back
               </button>
               <button
-                className="flex items-center bg-primary hover:bg-primary-hover text-foreground px-4 py-2 rounded focus:outline-none"
+                className="flex items-center bg-blue-500 hover:bg-blue-700 text-foreground px-4 py-2 rounded focus:outline-none"
                 onClick={() => setIsModalOpen(true)}
               >
                 Manage Materials
@@ -338,7 +338,7 @@ export default function ClassPage() {
                 </div>
               )}
               <button
-                className="px-6 py-2 w-40 bg-primary text-foreground rounded hover:bg-primary-hover focus:outline-none text-center"
+                className="px-6 py-2 w-40  bg-blue-500 text-foreground rounded hover:bg-blue-700 focus:outline-none text-center"
                 onClick={() => {
                   handleNextQuestion();
                   setFlip(true);
@@ -347,7 +347,7 @@ export default function ClassPage() {
                 Next Question
               </button>
               <button
-                className={`px-6 py-2 w-40 bg-surface text-foreground rounded hover:bg-surface-hover focus:outline-none text-center ${
+                className={`px-6 py-2 w-40 bg-surface text-foreground rounded hover:bg-blue-800 hover focus:outline-none text-center ${
                   !answer.trim() ? "disabled" : ""
                 }`}
                 onClick={() => {
@@ -359,30 +359,70 @@ export default function ClassPage() {
               >
                 Answer
               </button>
-              <p>Microphone: {listening ? "on" : "off"}</p>
+              <p className="text-foreground font-semibold bg-surface px-2 py-2 rounded-lg shadow-md flex items-center justify-center text-center gap-2">
+                {listening ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-green-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 1v4m0 0a3 3 0 013 3v4a3 3 0 01-6 0V8a3 3 0 013-3z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 13v3a7 7 0 01-14 0v-3m9 4H9"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-red-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                )}
+                Microphone {listening ? "Unmuted" : "Muted"}
+              </p>
+
               <button
                 onClick={() =>
                   SpeechRecognition.startListening({ continuous: true })
                 }
-                className="ml-2 bg-blue-500 text-white p-2 rounded"
+                className="ml-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-700 focus:outline-none"
               >
                 🎤 Start Recording
               </button>
               <button
                 onClick={SpeechRecognition.stopListening}
-                className="ml-2 bg-red-500 text-white p-2 rounded"
+                className="ml-2 bg-red-500 text-white p-2 rounded hover:bg-red-700 focus:outline-none"
               >
                 ⏹ Stop
               </button>
               <button
                 onClick={resetTranscript}
-                className="ml-2 bg-gray-500 text-white p-2 rounded"
+                className="ml-2 bg-gray-500 text-white hover:bg-gray-700 focus:outline-none p-2 rounded"
               >
                 🔄 Reset
               </button>
               <button
                 onClick={() => setIsReviewMode((prev) => !prev)}
-                className="px-6 py-2 w-40 bg-primary text-foreground rounded hover:bg-primary-hover focus:outline-none text-center"
+                className="px-6 py-2 w-40 bg-blue-500 text-foreground rounded hover:bg-blue-700 focus:outline-none text-center"
               >
                 {isReviewMode
                   ? "Switch to Study Mode"
