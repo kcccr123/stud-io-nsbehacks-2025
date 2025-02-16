@@ -195,6 +195,7 @@ def question_study():
         "Output only the JSON array and nothing else."
     )
 
+
     prompt_content = extracted_text if extracted_text.strip() else ""
     if user_request:
         prompt_content += f"\n\nUser Request: {user_request}"
@@ -216,6 +217,8 @@ def question_study():
     print(f"""\"\"\"{assistant_reply}\"\"\"""")
     print("===================================\n")
 
+    
+
     # 4. Parse JSON flashcards
     try:
         flashcards = json.loads(assistant_reply)
@@ -235,10 +238,13 @@ def question_study():
         if not selected_flashcard:
             return jsonify({"error": "No flashcard generated."}), 500
 
-        # 7. Return all generated flashcards along with the complete data of the selected flashcard and its ID.
+        resp = get_recommended_flashcards(user_id)
+        print(resp[0])
+
         return jsonify({
             "flashcards": flashcards,
             "selected_flashcard": selected_flashcard,
+            "response": resp[0]["topic"]
         }), 200
 
     except (json.JSONDecodeError, ValueError) as e:
@@ -329,7 +335,7 @@ def question():
     )
     assistant_reply = response.choices[0].message.content
     chats[chat_id].append({"role": "assistant", "content": assistant_reply})
-
+    
     # Debug print
     print("\n============ GPT Reply ============")
     print(f"""\"\"\"{assistant_reply}\"\"\"""")
