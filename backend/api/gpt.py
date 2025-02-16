@@ -118,3 +118,43 @@ def question(chats):
             "raw_reply": assistant_reply,
             "exception": str(e)
         }), 500
+def infer_flashcard_topic(flashcard, openai_api_key):
+    """
+    Use an LLM to determine the topic of the given flashcard.
+    The flashcard is expected to have a 'question' or 'content' field.
+    
+    Parameters:
+        flashcard (dict): The flashcard document.
+        openai_api_key (str): Your OpenAI API key.
+    
+    Returns:
+        str: The inferred topic.
+    """
+    # Extract flashcard text. Adjust the field names as needed.
+    flashcard_text = flashcard.get("question", flashcard.get("content", ""))
+    if not flashcard_text:
+        return "Unknown"
+
+    # Build a prompt that instructs the LLM to identify the topic.
+    prompt = (
+        "Identify the main topic or subject of the following flashcard:\n\n"
+        f"{flashcard_text}\n\n"
+        "Topic:"
+    )
+
+    # Set your OpenAI API key
+    OpenAI.api_key = openai_api_key
+
+    # Call the OpenAI API
+    response = OpenAI.Completion.create(
+        engine="text-davinci-003",  # or another engine of your choice
+        prompt=prompt,
+        max_tokens=20,
+        temperature=0.3,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0
+    )
+
+    topic = response.choices[0].text.strip()
+    return topic
