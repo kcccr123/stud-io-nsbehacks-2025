@@ -72,7 +72,6 @@ def recommend_questions(user_id):
     print(sorted_questions)
     return [item[0] for item in sorted_questions[:5]]
 
-# API endpoint to get recommended flashcards
 def get_recommended_flashcards(user_id):
     try:
         recommended_ids = recommend_questions(user_id)
