@@ -17,11 +17,7 @@ export default function ClassPage() {
 
   const [question, setQuestion] = useState("");
   const [flashcards, setFlashcards] = useState([]);
-  const [recommendedFlashcard, SetRecommendedFlashcard] = useState({
-    id: "",
-    answer: "",
-    question: "",
-  });
+  const [recommendedFlashcard, SetRecommendedFlashcard] = useState(null);
   const [aiText, setAiText] = useState("AI response will appear here...");
   const [answer, setAnswer] = useState("");
   const [flip, setFlip] = useState(false);
@@ -60,6 +56,12 @@ export default function ClassPage() {
       setAiText(nextFlashcard.question);
       setFlashcards([...flashcards]);
     } else {
+      if (recommendedFlashcard !== null) {
+        setAiText(recommendedFlashcard[0].question);
+        SetRecommendedFlashcard(null);
+        return;
+      }
+
       setAiText("No more flashcards.");
     }
   }
@@ -86,6 +88,11 @@ export default function ClassPage() {
   }
 
   async function handleUpload() {
+    if (!question.trim()) {
+      alert("Question field must be filled before uploading.");
+      return;
+    }
+
     console.log(question);
     if (selectedFile) {
       const formData = new FormData();
