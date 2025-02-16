@@ -83,24 +83,48 @@ def find_similar_flashcards():
     results = list(flashcard_collection.aggregate(pipeline))
     return jsonify(results), 200
 
-# def add_flashcard():
-#     data = request.get_json()
-#     question = data.get("question")
-#     answer = data.get("answer")
+def add_flashcard_func(flashcard_data):
+    """
+    Refactored: Now a regular function that accepts a Python dictionary.
+    
+    flashcard_data should be a dict with keys:
+      - "question" (str)
+      - "answer" (str)
+      - "topic" (optional, str)
+      - "difficulty" (optional, str)
 
-#     # Generate embedding using OpenAI API
-#     response = client.embeddings.create(input=f"{question} {answer}", model="text-embedding-ada-002")
-#     embedding = response.data[0].embedding
+    Returns:
+      A tuple: (response_json, status_code)
+        Where response_json is a Python dictionary, typically passed to jsonify() by the caller.
+        status_code is an HTTP-like status code (e.g., 201).
+    """
+    # 1. Build text to embed (e.g., "Question Answer")
+    text = f"{flashcard_data.get('question', '')} {flashcard_data.get('answer', '')}"
 
-#     flashcard_data = {
-#         "question": question,
-#         "answer": answer,
-#         "embedding": embedding,
-#         "topic": data.get("topic"),
-#         "difficulty": data.get("difficulty")
-#     }
-#     flashcard_collection.insert_one(flashcard_data)
-#     return jsonify({"message": "Flashcard added successfully with embedding"}), 201
+    # 2. Generate embedding
+    float32_embedding = get_embedding(text, "float32")
+    bson_float32_embedding = generate_bson_vector(float32_embedding, BinaryVectorDtype.FLOAT32)
+
+    # 3. Build document for MongoDB
+    doc = {
+        "question": flashcard_data.get("question"),
+        "answer": flashcard_data.get("answer"),
+        "embedding": bson_float32_embedding,
+        "topic": flashcard_data.get("topic"),
+        "difficulty": flashcard_data.get("difficulty")
+    }
+
+    # 4. Insert into the collection
+    result = flashcard_collection.insert_one(doc)
+
+    # 5. Return a response-like dict plus an HTTP-like status
+    return (
+        {
+            "message": "Flashcard added with BSON vector embedding",
+            "flashcard_id": str(result.inserted_id)
+        },
+        201
+    )
 
 # Update a flashcard by ID
 def update_flashcard(flashcard_id):

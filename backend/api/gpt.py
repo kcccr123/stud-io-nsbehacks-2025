@@ -1,3 +1,5 @@
+# main.py (or wherever your Flask routes live)
+
 import os
 from flask import Flask, request, jsonify
 from openai import OpenAI
@@ -6,36 +8,30 @@ import io
 from PyPDF2 import PdfReader
 import json
 
-from controllers.flashcards_controller import add_flashcard  # <--- Your existing add_flashcard() function
+# Import the refactored function
+from controllers.flashcards_controller import add_flashcard_func
 
 # Load environment variables
 load_dotenv()
-
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
 app = Flask(__name__)
 
-# Store chat contexts if you want ongoing conversation
-chats = {}
-
-# -------------------------------------------------------------------
-# No more 'create_flashcard_in_db' helper. We'll directly call add_flashcard().
-# -------------------------------------------------------------------
-
-@app.route("/question", methods=["POST"])
-def question():
+def question(chats):
     """
     Expects:
       - multipart/form-data with:
-          - One or more PDF files under the field name "pdfs"
-          - A "chat_id" field to identify the conversation
-          - An optional "user_request" field: e.g., "multiple choice," "focus on definitions," etc.
+          - PDF files under the field "pdfs"
+          - A "chat_id" to identify conversation
+          - Optional "user_request" field
+    Generates flashcards via ChatGPT in JSON format, parses them, and
+    stores each one in MongoDB using add_flashcard_func.
     """
     chat_id = request.form.get("chat_id", None)
     if not chat_id:
         return jsonify({"error": "Missing chat_id."}), 400
 
-    # If this chat doesn't exist yet, initialize with a special system prompt
+    # 1. Initialize conversation if needed
     if chat_id not in chats:
         chats[chat_id] = [
             {
@@ -51,7 +47,7 @@ def question():
 
     user_request = request.form.get("user_request", "").strip()
 
-    # Check for PDFs
+    # 2. Extract PDFs
     if "pdfs" not in request.files:
         return jsonify({"error": "No PDFs uploaded. Include files with key 'pdfs'."}), 400
 
@@ -59,7 +55,6 @@ def question():
     if not files:
         return jsonify({"error": "No PDF files found."}), 400
 
-    # Extract text from PDFs
     extracted_text = ""
     for file in files:
         if file.filename.lower().endswith(".pdf"):
@@ -83,61 +78,43 @@ def question():
     if user_request:
         user_content += f"\n\nUser request: {user_request}"
 
-    # Add user content to chat
     chats[chat_id].append({"role": "user", "content": user_content})
 
-    # Call OpenAI
+    # 3. Call ChatGPT
     client = OpenAI(api_key=openai_api_key)
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=chats[chat_id],
     )
-
     assistant_reply = response.choices[0].message.content
     chats[chat_id].append({"role": "assistant", "content": assistant_reply})
 
-    # Print GPT's raw reply (for debugging)
-    print("\n" + "="*50)
-    print("GPT Reply (triple-quoted):\n")
+    # Debug print
+    print("\n============ GPT Reply ============")
     print(f"""\"\"\"{assistant_reply}\"\"\"""")
-    print("="*50 + "\n")
+    print("===================================\n")
 
-    # Attempt to parse JSON flashcards
+    # 4. Parse JSON flashcards
     try:
         flashcards = json.loads(assistant_reply)
-
         if not isinstance(flashcards, list):
             raise ValueError("Expected a JSON array of flashcards.")
 
-        # For each flashcard, call add_flashcard() by simulating a POST request context
+        # 5. Insert each flashcard into the DB using the new function
         flashcards_added = 0
         for fc in flashcards:
-            # 'fc' is a dictionary like {"question": "...", "answer": "...", ...}
+            resp, status_code = add_flashcard_func(fc)
+            if status_code == 201:
+                flashcards_added += 1
 
-            # We must simulate a JSON request body for add_flashcard().
-            with app.test_request_context(
-                "/add_flashcard",
-                method="POST",
-                json=fc   # <--- The dictionary data will be available via request.get_json() inside add_flashcard()
-            ):
-                resp = add_flashcard()  # This calls your existing function, which uses request.get_json()
-                if resp[1] == 201:
-                    flashcards_added += 1
-
-        return jsonify({"flashcards_added": flashcards_added, "flashcards": flashcards}), 200
+        return jsonify({
+            "flashcards_added": flashcards_added,
+            "flashcards": flashcards
+        }), 200
 
     except (json.JSONDecodeError, ValueError) as e:
-        # If GPT returned invalid JSON or the structure isn't what we expect
         return jsonify({
             "error": "Could not parse JSON flashcards from GPT response.",
             "raw_reply": assistant_reply,
             "exception": str(e)
         }), 500
-
-
-@app.route("/", methods=["GET"])
-def index():
-    return "Flask server is running!"
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)

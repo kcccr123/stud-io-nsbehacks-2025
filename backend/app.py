@@ -3,8 +3,11 @@ from controllers.user_controller import register_user, login_user, save_rl_data,
 from controllers.flashcards_controller import get_flashcards, get_flashcard, add_flashcard, update_flashcard, delete_flashcard, find_similar_flashcards
 from controllers.performance_controller import get_performance, add_update_performance, delete_performance, get_q_table, log_user_performance, get_recommended_flashcards
 from utils.db import db
+from api.gpt import question
 
 app = Flask(__name__)
+
+chats = {}
 
 try:
     db.command('ping')
@@ -26,6 +29,7 @@ app.add_url_rule('/flashcards/<flashcard_id>', 'update_flashcard', update_flashc
 app.add_url_rule('/flashcards/<flashcard_id>', 'delete_flashcard', delete_flashcard, methods=['DELETE'])
 app.add_url_rule('/flashcards/similar', 'find_similar_flashcards', find_similar_flashcards, methods=['GET'])
 
+app.add_url_rule('/question', 'question', question, methods=['POST'])
 
 # Register routes from performance_controller
 app.add_url_rule('/performance/<user_id>', 'get_performance', get_performance, methods=['GET'])
