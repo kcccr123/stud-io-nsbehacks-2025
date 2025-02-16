@@ -18,7 +18,7 @@ chats = {}
 load_dotenv()
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
-def question(chats):
+def question():
     """
     Expects:
       - multipart/form-data with:
@@ -40,7 +40,8 @@ def question(chats):
                 "content": (
                     "You are a helpful assistant that processes PDF documents and extracts information. "
                     "Generate 10 flashcards in valid JSON format, with each flashcard containing "
-                    "the keys: question, answer, topic, difficulty. Return ONLY JSON, e.g.:\n"
+                    "the keys: question, answer, topic, difficulty. Return ONLY VALID JSON, WHICH CAN BE USED WITH json.loads() e.g.:\n"
+                    "without any Markdown code block formatting. Do NOT include ```json or ```."
                     "[\n  {\n    \"question\": \"...\",\n    \"answer\": \"...\",\n    \"topic\": \"...\",\n    \"difficulty\": \"...\"\n  },\n  ...\n]"
                 )
             }
@@ -56,7 +57,7 @@ def question(chats):
     if not files:
         return jsonify({"error": "No PDF files found."}), 400
 
-    extracted_text = ""
+    extracted_text = "" 
     for file in files:
         if file.filename.lower().endswith(".pdf"):
             try:
