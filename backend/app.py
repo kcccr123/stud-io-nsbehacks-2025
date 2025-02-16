@@ -3,8 +3,11 @@ from controllers.user_controller import register_user, login_user, save_rl_data,
 from controllers.flashcards_controller import get_flashcards, get_flashcard, add_flashcard, update_flashcard, delete_flashcard, find_similar_flashcards
 from controllers.performance_controller import get_performance, add_update_performance, delete_performance, get_q_table, log_user_performance, get_recommended_flashcards
 from utils.db import db
+from flask_cors import CORS
+
 
 app = Flask(__name__)
+CORS(app)
 
 try:
     db.command('ping')
@@ -38,3 +41,4 @@ app.add_url_rule('/performance/<user_id>/recommendations', 'get_recommended_flas
 
 if __name__ == "__main__":
     app.run(debug=True)
+    
