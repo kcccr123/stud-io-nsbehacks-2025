@@ -223,6 +223,7 @@ def question_study():
         # 5. Insert each flashcard into the DB using add_flashcard_func
         for fc in flashcards:
             resp, status_code = add_flashcard_func(fc)
+            fc['id'] = resp
             if status_code != 201:
                 # Optionally log failures here.
                 pass
@@ -231,13 +232,6 @@ def question_study():
         selected_flashcard = random.choice(flashcards) if flashcards else None
         if not selected_flashcard:
             return jsonify({"error": "No flashcard generated."}), 500
-
-        # Ensure the selected flashcard has an ID.
-        selected_flashcard_id = selected_flashcard.get("_id")
-        if not isinstance(selected_flashcard_id, str):
-            selected_flashcard_id = str(selected_flashcard_id)
-
-        selected_flashcard['id'] = selected_flashcard_id
 
         # 7. Return all generated flashcards along with the complete data of the selected flashcard and its ID.
         return jsonify({
