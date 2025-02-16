@@ -117,7 +117,6 @@ def add_flashcard_func(flashcard_data):
     # 4. Insert into the collection
     result = flashcard_collection.insert_one(doc)
 
-    # 5. Return a response-like dict plus an HTTP-like status
     return (
         {
             "message": "Flashcard added with BSON vector embedding",
