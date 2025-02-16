@@ -14,8 +14,16 @@ export default function ClassPage() {
   const [classData, setClassData] = useState(null);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState(50);
-  const [messages, setMessages] = useState([]);
-  const [chatInput, setChatInput] = useState("");
+
+  const [question, setQuestion] = useState("");
+  const [aiText, setAiText] = useState("AI response will appear here...");
+  const [answer, setAnswer] = useState("");
+  const [flip, setFlip] = useState(false);
+  const [answerError, setAnswerError] = useState(false);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   useEffect(() => {
     if (!id) return;
@@ -31,35 +39,123 @@ export default function ClassPage() {
     })();
   }, [id]);
 
-  const handleSendMessage = () => {
-    if (!chatInput.trim()) return;
-    const newMessage = { sender: "user", text: chatInput };
-    setMessages((prev) => [...prev, newMessage]);
-    setChatInput("");
-
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage = {
-        sender: "ai",
-        text: `AI response to "${newMessage.text}"`,
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-    }, 500);
-  };
+  useEffect(() => {
+    setFlip(true);
+    const timer = setTimeout(() => setFlip(false), 600);
+    return () => clearTimeout(timer);
+  }, [aiText]);
 
   if (error) return <div className="text-muted">Error: {error}</div>;
   if (!classData) return <div className="text-muted">Loading...</div>;
 
+  function handleNextQuestion() {
+    const data = {
+      files: uploadedFiles,
+      topic: question,
+    };
+
+    console.log(data);
+
+    const responseQuestion = `Response to your question: ${question}`;
+    setAiText(responseQuestion);
+  }
+
+  function handleAnswer() {
+    if (!answer.trim()) {
+      setAnswerError(true);
+      return;
+    }
+    setAnswerError(false);
+
+    const data = {
+      question,
+      answer,
+    };
+
+    console.log(data);
+
+    setAiText(`Response to your answer: ${answer}`);
+  }
+
+  function handleFileUpload(event) {
+    setSelectedFile(event.target.files[0]);
+  }
+
+  function handleUpload() {
+    if (selectedFile) {
+      setUploadedFiles((prevFiles) => [...prevFiles, selectedFile]);
+      setSelectedFile(null);
+    }
+  }
+
+  function handleRemoveFile(index) {
+    setUploadedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
+  }
+
   return (
     <>
-      {/* Temporary input for setting progress */}
-      <div className="fixed top-0 right-0 p-4 bg-transparent text-foreground">
+      <style jsx>{`
+        @keyframes flip {
+          0% {
+            transform: rotateY(0);
+          }
+          50% {
+            transform: rotateY(90deg);
+          }
+          100% {
+            transform: rotateY(180deg);
+          }
+        }
+        .flip-animation {
+          animation: flip 0.6s ease-in-out;
+        }
+
+        .disabled {
+          background-color: grey;
+          cursor: not-allowed;
+        }
+        .modal {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .modal-content {
+          padding: 20px;
+          border-radius: 8px;
+          min-width: 400px;
+          min-height: 400px;
+          text-align: center;
+        }
+        .file-input {
+          display: none;
+        }
+        .file-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+      `}</style>
+
+      <div className="fixed flex flex-col top-0 right-0 p-4 bg-transparent text-foreground">
         <input
           className="bg-transparent border-b border-foreground focus:outline-none text-foreground"
           type="number"
           value={progress}
           onChange={(e) => setProgress(Number(e.target.value))}
           placeholder="Set progress"
+        />
+        <input
+          className="bg-transparent border-b border-foreground focus:outline-none text-foreground"
+          type="text"
+          value={aiText}
+          onChange={(e) => setAiText(e.target.value)}
+          placeholder="Set ai text"
         />
       </div>
 
@@ -69,12 +165,14 @@ export default function ClassPage() {
             <h1 className="text-5xl font-bold text-foreground">
               {classData.name}
             </h1>
-            <button className="flex items-center bg-primary hover:bg-primary-hover text-foreground px-4 py-2 rounded focus:outline-none">
+            <button
+              className="flex items-center bg-primary hover:bg-primary-hover text-foreground px-4 py-2 rounded focus:outline-none"
+              onClick={() => setIsModalOpen(true)}
+            >
               Manage Materials
             </button>
           </div>
 
-          {/* Progress Bar Section */}
           <div className="px-4 mt-4">
             <p className="text-lg font-semibold text-foreground mb-2">
               Understanding
@@ -94,54 +192,113 @@ export default function ClassPage() {
             </div>
           </div>
 
-          {/* Chat Window Section */}
           <div className="px-4 mt-6">
-            <div className="mb-2 text-lg font-semibold text-foreground">
-              Chat
-            </div>
+            <input
+              className="border border-foreground p-2 rounded w-full mb-4 bg-background text-foreground"
+              placeholder="what would you like to work on"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+            />
             <div
-              className="flex flex-col border border-foreground rounded bg-background"
-              style={{ height: "600px" }}
+              className={`flex items-center justify-center border border-foreground p-2 rounded bg-background text-foreground mb-4 h-80 ${
+                flip ? "flip-animation" : ""
+              }`}
+              onAnimationEnd={() => setFlip(false)}
             >
-              <div className="flex-1 overflow-y-auto p-2">
-                {messages.length === 0 && (
-                  <p className="text-muted">No messages yet...</p>
-                )}
-                {messages.map((msg, index) => (
-                  <div
-                    key={index}
-                    className={`mb-1 ${
-                      msg.sender === "user" ? "text-right" : "text-left"
-                    }`}
-                  >
-                    <span className="inline-block rounded px-2 py-1 text-foreground">
-                      {msg.text}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="flex space-x-2 p-2 border-t border-foreground">
-                <input
-                  className="flex-1 px-2 py-1 border border-foreground rounded bg-transparent text-foreground focus:outline-none"
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Type a message"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSendMessage();
-                  }}
-                />
-                <button
-                  className="px-4 py-1 bg-primary hover:bg-primary-hover text-foreground rounded focus:outline-none"
-                  onClick={handleSendMessage}
-                >
-                  Send
-                </button>
-              </div>
+              <p>{aiText}</p>
+            </div>
+            <input
+              className={`border p-2 rounded w-full mb-2 bg-background text-foreground ${
+                answerError ? "error" : "border-foreground"
+              }`}
+              placeholder="Your answer"
+              value={answer}
+              onChange={(e) => {
+                setAnswer(e.target.value);
+                if (e.target.value.trim()) {
+                  setAnswerError(false);
+                }
+              }}
+            />
+            <div className="flex justify-center space-x-4">
+              <button
+                className="px-6 py-2 w-40 bg-primary text-foreground rounded hover:bg-primary-hover focus:outline-none text-center"
+                onClick={() => {
+                  handleNextQuestion();
+                  setFlip(true);
+                }}
+              >
+                Next Question
+              </button>
+              <button
+                className={`px-6 py-2 w-40 bg-surface text-foreground rounded hover:bg-surface-hover focus:outline-none text-center ${
+                  !answer.trim() ? "disabled" : ""
+                }`}
+                onClick={() => {
+                  handleAnswer();
+                  setFlip(true);
+                }}
+                disabled={!answer.trim()}
+              >
+                Answer
+              </button>
             </div>
           </div>
         </div>
       </nav>
+
+      {isModalOpen && (
+        <div className="modal w-80" onClick={() => setIsModalOpen(false)}>
+          <div
+            className="modal-content flex flex-col items-center gap-4 bg-surface"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="mb-4 text-2xl">Upload Course Material</h2>
+            <label
+              className="border rounded p-2 inline-block cursor-pointer min-w-32"
+              htmlFor="file-upload"
+            >
+              {selectedFile ? selectedFile.name : "Choose File"}
+            </label>
+            <input
+              id="file-upload"
+              className="file-input"
+              type="file"
+              accept="application/pdf"
+              onChange={handleFileUpload}
+            />
+            <button
+              className="p-2 w-28 bg-primary rounded hover:bg-primary-hover text-foreground"
+              onClick={handleUpload}
+            >
+              Upload
+            </button>
+
+            <div className="mt-4">
+              <h3>Uploaded Files:</h3>
+              <ul>
+                {uploadedFiles.map((file, index) => (
+                  <li key={index} className="file-item">
+                    {file.name}
+                    <button
+                      className=" text-foreground p-1 rounded"
+                      onClick={() => handleRemoveFile(index)}
+                    >
+                      &times;
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <button
+                className="p-2 mt-4 bg-primary rounded hover:bg-primary-hover text-foreground"
+                onClick={() => setIsModalOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
