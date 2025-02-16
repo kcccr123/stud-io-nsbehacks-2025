@@ -10,6 +10,7 @@ from controllers.performance_controller import get_performance, add_update_perfo
 from utils.db import db
 from api.gpt import question
 from flask_cors import CORS
+from openai import OpenAI
 
 
 app = Flask(__name__)
