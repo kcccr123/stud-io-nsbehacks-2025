@@ -123,13 +123,13 @@ const Dashboard = () => {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg shadow-md w-96">
-            <h2 className="text-2xl font-bold mb-4">Join a Class</h2>
+            <h2 className="text-2xl font-bold text-black mb-4">Join a Class</h2>
             <input
               type="text"
               value={newClassName}
               onChange={(e) => setNewClassName(e.target.value)}
               placeholder="Enter class name"
-              className="w-full p-2 border rounded mb-4"
+              className="w-full p-2 border rounded mb-4 text-black"
             />
             <div className="flex justify-end space-x-2">
               <button
