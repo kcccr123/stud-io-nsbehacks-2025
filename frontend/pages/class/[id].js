@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
 async function fetchClass(id) {
   return { id, name: "CSC111" };
 }
@@ -10,6 +12,18 @@ async function fetchUnderstanding(id) {
 }
 
 export default function ClassPage() {
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+  } = useSpeechRecognition();
+
+  // Update the state when the transcript changes
+  React.useEffect(() => {
+    setAnswer(transcript);
+  }, [transcript]);
+
   const { id } = useRouter().query;
   const [classData, setClassData] = useState(null);
   const [error, setError] = useState(null);
@@ -28,7 +42,6 @@ export default function ClassPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [studyNotification, setStudyNotification] = useState(true);
 
   useEffect(() => {
     if (!id) return;
@@ -154,6 +167,10 @@ export default function ClassPage() {
     setUploadedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
   }
 
+  if (!browserSupportsSpeechRecognition) {
+    return <span>Browser does not support speech recognition.</span>;
+  }
+
   return (
     <>
       <style jsx>{`
@@ -277,19 +294,6 @@ export default function ClassPage() {
               }}
             />
             <div className="flex justify-center space-x-4">
-              {studyNotification && (
-                <div className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded-lg shadow-lg w-64">
-                  <h3 className="text-lg font-bold mb-2">Time to Study!</h3>
-                  <p>Let's get started with your flashcards!</p>
-                  <button
-                    className="mt-2 bg-white text-blue-500 px-3 py-1 rounded hover:bg-gray-100"
-                    onClick={() => setStudyNotification(false)}
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              )}
-
               <button
                 className="px-6 py-2 w-40 bg-primary text-foreground rounded hover:bg-primary-hover focus:outline-none text-center"
                 onClick={() => {
@@ -311,6 +315,27 @@ export default function ClassPage() {
                 disabled={!answer.trim()}
               >
                 Answer
+              </button>
+              <p>Microphone: {listening ? "on" : "off"}</p>
+              <button
+                onClick={() =>
+                  SpeechRecognition.startListening({ continuous: true })
+                }
+                className="ml-2 bg-blue-500 text-white p-2 rounded"
+              >
+                🎤 Start Recording
+              </button>
+              <button
+                onClick={SpeechRecognition.stopListening}
+                className="ml-2 bg-red-500 text-white p-2 rounded"
+              >
+                ⏹ Stop
+              </button>
+              <button
+                onClick={resetTranscript}
+                className="ml-2 bg-gray-500 text-white p-2 rounded"
+              >
+                🔄 Reset
               </button>
               <button
                 onClick={() => setIsReviewMode((prev) => !prev)}
