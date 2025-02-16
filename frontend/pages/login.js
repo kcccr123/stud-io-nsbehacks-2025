@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { PROJECT_NAME } from "../utils/config";
+import { useRouter } from "next/router";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,6 +23,11 @@ export default function Login() {
       }
 
       const result = await response.json();
+
+      localStorage.setItem("userId", result.user_id);
+
+      router.push("/dashboard");
+
       console.log("Login successful:", result);
     } catch (error) {
       console.error("Error during login:", error.message);
