@@ -1,0 +1,18 @@
+# .gitignore file
+
+# Ignore Python virtual environment
+venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+
+# Editor and OS-specific files
+.vscode/
+.idea/
+*.swp
+.DS_Store
