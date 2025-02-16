@@ -83,8 +83,8 @@ def get_recommended_flashcards(user_id):
                 valid_ids.append(ObjectId(i))
             except InvalidId:
                 print(f"Invalid ObjectId skipped: {i}")
-        results = (flashcard_collection.find({"_id": {"$in": valid_ids}}, {"_id": 0, "question": 1, "answer": 1}))
-        return jsonify(results), 200
+
+        return  (flashcard_collection.find({"_id": {"$in": valid_ids}}, {"_id": 0, "question": 1, "answer": 1}))
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
