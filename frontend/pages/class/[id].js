@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
+
 async function fetchClass(id) {
   return { id, name: "CSC111" };
 }
@@ -12,6 +13,8 @@ async function fetchUnderstanding(id) {
 }
 
 export default function ClassPage() {
+  const router = useRouter();
+
   const {
     transcript,
     listening,
@@ -42,6 +45,8 @@ export default function ClassPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [studyNotification, setStudyNotification] = useState(false);
+  const [topic, setTopic] = useState(null);
 
   useEffect(() => {
     if (!id) return;
@@ -145,6 +150,9 @@ export default function ClassPage() {
             method: "POST",
             body: formData,
           });
+
+          setStudyNotification(true);
+          setTopic(response.topic);
         }
 
         if (!response.ok) {
@@ -239,6 +247,12 @@ export default function ClassPage() {
       </div>
 
       <nav className="min-h-screen w-screen flex justify-center items-start pt-10 bg-background">
+        <button
+          className="flex items-center bg-primary hover:bg-primary-hover text-foreground px-4 py-2 rounded focus:outline-none"
+          onClick={() => router.back()}
+        >
+          ← Back
+        </button>
         <div className="w-full max-w-3xl">
           <div className="flex items-center space-x-4 p-4 rounded justify-between">
             <h1 className="text-5xl font-bold text-foreground">
@@ -294,6 +308,23 @@ export default function ClassPage() {
               }}
             />
             <div className="flex justify-center space-x-4">
+              {studyNotification && (
+                <div className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded-lg shadow-lg w-64">
+                  <h3 className="text-lg font-bold mb-2">
+                    Topics You're Struggling With!
+                  </h3>
+                  <p>You seem to be struggling with ${topic}</p>
+                  <button
+                    className="mt-2 bg-white text-blue-500 px-3 py-1 rounded hover:bg-gray-100"
+                    onClick={() => {
+                      setStudyNotification(false);
+                      setTopic(null);
+                    }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
               <button
                 className="px-6 py-2 w-40 bg-primary text-foreground rounded hover:bg-primary-hover focus:outline-none text-center"
                 onClick={() => {
