@@ -29,7 +29,7 @@ app.add_url_rule('/flashcards/<flashcard_id>', 'update_flashcard', update_flashc
 app.add_url_rule('/flashcards/<flashcard_id>', 'delete_flashcard', delete_flashcard, methods=['DELETE'])
 app.add_url_rule('/flashcards/similar', 'find_similar_flashcards', find_similar_flashcards, methods=['GET'])
 
-app.add_url_rule('/question', 'question', question, methods=['POST'])
+app.add_url_rule('/question', 'question', question(chats), methods=['POST'])
 
 # Register routes from performance_controller
 app.add_url_rule('/performance/<user_id>', 'get_performance', get_performance, methods=['GET'])
