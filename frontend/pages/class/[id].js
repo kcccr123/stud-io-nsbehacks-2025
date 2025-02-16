@@ -16,10 +16,14 @@ export default function ClassPage() {
   const [progress, setProgress] = useState(50);
 
   const [question, setQuestion] = useState("");
-  const [aiText, setAiText] = useState("AI response will appear here...");
+  const [flashcards, setFlashcards] = useState([]);
+  const [currentFlashcard, setCurrentFlashcard] = useState(null);
+  const [recommendedFlashcard, SetRecommendedFlashcard] = useState(null);
+  const [aiText, setAiText] = useState("Generate some questions!");
   const [answer, setAnswer] = useState("");
   const [flip, setFlip] = useState(false);
   const [answerError, setAnswerError] = useState(false);
+  const [isReviewMode, setIsReviewMode] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -49,42 +53,99 @@ export default function ClassPage() {
   if (!classData) return <div className="text-muted">Loading...</div>;
 
   function handleNextQuestion() {
-    const data = {
-      files: uploadedFiles,
-      topic: question,
-    };
+    if (flashcards.length > 0) {
+      const nextFlashcard = flashcards.pop();
+      setCurrentFlashcard(nextFlashcard);
+      setAiText(nextFlashcard.question);
+      setFlashcards([...flashcards]);
+    } else {
+      if (recommendedFlashcard !== null) {
+        setAiText(recommendedFlashcard.question);
+        SetRecommendedFlashcard(null);
+        return;
+      }
 
-    console.log(data);
-
-    const responseQuestion = `Response to your question: ${question}`;
-    setAiText(responseQuestion);
+      setAiText("No more flashcards.");
+    }
   }
 
-  function handleAnswer() {
+  async function handleAnswer() {
     if (!answer.trim()) {
       setAnswerError(true);
       return;
     }
     setAnswerError(false);
 
-    const data = {
-      question,
-      answer,
-    };
+    const formData = new FormData();
+    formData.append("chat_id", "CSC111");
+    formData.append("user_id", "67b0e038fede027c6a136c03");
+    formData.append("flashcard_id", currentFlashcard._id);
+    formData.append("question", aiText);
+    formData.append("answer", answer);
 
-    console.log(data);
+    try {
+      const response = await fetch("http://localhost:5000/answer", {
+        method: "POST",
+        body: formData,
+      });
 
-    setAiText(`Response to your answer: ${answer}`);
+      if (!response.ok) {
+        throw new Error("Failed to submit answer");
+      }
+
+      const result = await response.json();
+      setAiText(result.correct ? "Good job!" : result.correct_answer);
+    } catch (error) {
+      console.error("Error submitting answer:", error.message);
+    }
   }
 
   function handleFileUpload(event) {
     setSelectedFile(event.target.files[0]);
   }
 
-  function handleUpload() {
+  async function handleUpload() {
+    if (!question.trim()) {
+      alert("Question field must be filled before uploading.");
+      return;
+    }
+
+    console.log(question);
     if (selectedFile) {
-      setUploadedFiles((prevFiles) => [...prevFiles, selectedFile]);
-      setSelectedFile(null);
+      const formData = new FormData();
+      formData.append("chat_id", "CSC111");
+      formData.append("user_id", "67b0e038fede027c6a136c03");
+      formData.append("user_request", question);
+      formData.append("pdfs", selectedFile); // Key `pdfs` matches your backend expectation
+
+      try {
+        let response;
+
+        if (isReviewMode) {
+          response = await fetch("http://localhost:5000/question/review", {
+            method: "POST",
+            body: formData,
+          });
+        } else {
+          response = await fetch("http://localhost:5000/question/study", {
+            method: "POST",
+            body: formData,
+          });
+        }
+
+        if (!response.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const result = await response.json();
+        console.log("Upload successful:", result);
+        setFlashcards(result.flashcards);
+        SetRecommendedFlashcard(result.recommended_flashcard);
+        setUploadedFiles((prevFiles) => [...prevFiles, selectedFile]);
+        setSelectedFile(null);
+      } catch (error) {
+        console.error("Error during upload:", error.message);
+      }
     }
   }
 
@@ -193,12 +254,6 @@ export default function ClassPage() {
           </div>
 
           <div className="px-4 mt-6">
-            <input
-              className="border border-foreground p-2 rounded w-full mb-4 bg-background text-foreground"
-              placeholder="what would you like to work on"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-            />
             <div
               className={`flex items-center justify-center border border-foreground p-2 rounded bg-background text-foreground mb-4 h-80 ${
                 flip ? "flip-animation" : ""
@@ -236,11 +291,20 @@ export default function ClassPage() {
                 }`}
                 onClick={() => {
                   handleAnswer();
+                  setAnswer("");
                   setFlip(true);
                 }}
                 disabled={!answer.trim()}
               >
                 Answer
+              </button>
+              <button
+                onClick={() => setIsReviewMode((prev) => !prev)}
+                className="px-6 py-2 w-40 bg-primary text-foreground rounded hover:bg-primary-hover focus:outline-none text-center"
+              >
+                {isReviewMode
+                  ? "Switch to Study Mode"
+                  : "Switch to Review Mode"}
               </button>
             </div>
           </div>
@@ -253,6 +317,12 @@ export default function ClassPage() {
             className="modal-content flex flex-col items-center gap-4 bg-surface"
             onClick={(e) => e.stopPropagation()}
           >
+            <input
+              className="border border-foreground p-2 rounded w-full mb-4 bg-background text-foreground"
+              placeholder="what would you like to work on"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+            />
             <h2 className="mb-4 text-2xl">Upload Course Material</h2>
             <label
               className="border rounded p-2 inline-block cursor-pointer min-w-32"
