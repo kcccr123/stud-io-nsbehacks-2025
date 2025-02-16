@@ -23,3 +23,11 @@ def get_all_classes():
     for cls in classes:
         cls["_id"] = str(cls["_id"])
     return jsonify(classes), 200
+
+# Get a single class by ID
+def get_single_class(class_id):
+    cls = class_collection.find_one({"_id": ObjectId(class_id)})
+    if cls:
+        cls["_id"] = str(cls["_id"])
+        return jsonify(cls), 200
+    return jsonify({"error": "Class not found"}), 404

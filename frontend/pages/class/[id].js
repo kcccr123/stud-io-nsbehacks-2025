@@ -5,7 +5,17 @@ import SpeechRecognition, {
 } from "react-speech-recognition";
 
 async function fetchClass(id) {
-  return { id, name: "CSC111" };
+  try {
+    const response = await fetch(`http://localhost:5000/classes/${id}`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch class");
+    }
+    const data = await response.json();
+    return { id: data._id, name: data.className };
+  } catch (error) {
+    console.error("Error fetching class:", error);
+    return null;
+  }
 }
 
 async function fetchUnderstanding(id) {
