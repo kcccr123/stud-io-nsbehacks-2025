@@ -19,7 +19,7 @@ def delete_class(class_id):
 
 # Get all classes
 def get_all_classes():
-    classes = list(class_collection.find({}, {"classname": 1}))  # Include only classnames
+    classes = list(class_collection.find({}, {"className": 1}))  # Include only classnames
     for cls in classes:
         cls["_id"] = str(cls["_id"])
     return jsonify(classes), 200

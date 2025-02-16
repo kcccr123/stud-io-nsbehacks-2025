@@ -9,13 +9,17 @@ const Dashboard = () => {
   const [newClassName, setNewClassName] = useState("");
 
   const fetchClasses = async () => {
-    return [
-      { id: 1, name: "CSC111" },
-      { id: 2, name: "CSC110" },
-      { id: 3, name: "CSC369" },
-      { id: 4, name: "CSC373" },
-      { id: 5, name: "CSC420" },
-    ];
+    try {
+      const response = await fetch("http://localhost:5000/classes");
+      if (!response.ok) {
+        throw new Error("Failed to fetch classes");
+      }
+      const data = await response.json();
+      return data.map((cls) => ({ id: cls._id, className: cls.className }));
+    } catch (error) {
+      console.error("Failed to fetch classes:", error);
+      return [];
+    }
   };
 
   const handleClassClick = (id) => {
@@ -80,9 +84,11 @@ const Dashboard = () => {
               <div
                 key={cls.id}
                 onClick={() => handleClassClick(cls.id)}
-                className="bg-surface border border-gray-300 rounded-lg p-6 transform transition-transform duration-300 hover:scale-105 cursor-pointer"
+                className="bg-surface border border-gray-300 rounded-2xl p-8 flex items-center justify-center transform transition-transform duration-300 hover:scale-105 cursor-pointer shadow-lg w-72 h-40"
               >
-                <h2 className="text-xl font-semibold mb-2">{cls.name}</h2>
+                <h2 className="text-2xl font-bold text-center text-foreground">
+                  {cls.className}
+                </h2>
               </div>
             ))
           )}
