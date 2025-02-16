@@ -22,6 +22,7 @@ export default function ClassPage() {
   const [answer, setAnswer] = useState("");
   const [flip, setFlip] = useState(false);
   const [answerError, setAnswerError] = useState(false);
+  const [isReviewMode, setIsReviewMode] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -57,7 +58,7 @@ export default function ClassPage() {
       setFlashcards([...flashcards]);
     } else {
       if (recommendedFlashcard !== null) {
-        setAiText(recommendedFlashcard[0].question);
+        setAiText(recommendedFlashcard.question);
         SetRecommendedFlashcard(null);
         return;
       }
@@ -102,10 +103,19 @@ export default function ClassPage() {
       formData.append("pdfs", selectedFile); // Key `pdfs` matches your backend expectation
 
       try {
-        const response = await fetch("http://localhost:5000/question", {
-          method: "POST",
-          body: formData,
-        });
+        let response;
+
+        if (isReviewMode) {
+          response = await fetch("http://localhost:5000/question/review", {
+            method: "POST",
+            body: formData,
+          });
+        } else {
+          response = await fetch("http://localhost:5000/question/study", {
+            method: "POST",
+            body: formData,
+          });
+        }
 
         if (!response.ok) {
           throw new Error("Upload failed");
@@ -270,6 +280,14 @@ export default function ClassPage() {
                 disabled={!answer.trim()}
               >
                 Answer
+              </button>
+              <button
+                onClick={() => setIsReviewMode((prev) => !prev)}
+                className="px-6 py-2 w-40 bg-primary text-foreground rounded hover:bg-primary-hover focus:outline-none text-center"
+              >
+                {isReviewMode
+                  ? "Switch to Study Mode"
+                  : "Switch to Review Mode"}
               </button>
             </div>
           </div>
