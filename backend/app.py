@@ -119,8 +119,8 @@ def question_review():
 
         # 7. Return the generated flashcard along with the recommended flashcards used
         return jsonify({
-            "generated_flashcard": new_flashcard,
-            "recommended_flashcards_used": recommended_flashcards
+            "recommended_flashcard": new_flashcard,
+            "flashcards": recommended_flashcards
         }), 200
 
     except (json.JSONDecodeError, ValueError) as e:
