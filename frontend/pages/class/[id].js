@@ -255,15 +255,15 @@ export default function ClassPage() {
             <div className="flex space-x-4 p-4">
               <button
                 className="flex items-center bg-primary hover:bg-primary-hover text-foreground px-4 py-2 rounded focus:outline-none"
-                onClick={() => setIsModalOpen(true)}
-              >
-                Manage Materials
-              </button>
-              <button
-                className="flex items-center bg-primary hover:bg-primary-hover text-foreground px-4 py-2 rounded focus:outline-none"
                 onClick={() => router.back()}
               >
                 ← Back
+              </button>
+              <button
+                className="flex items-center bg-primary hover:bg-primary-hover text-foreground px-4 py-2 rounded focus:outline-none"
+                onClick={() => setIsModalOpen(true)}
+              >
+                Manage Materials
               </button>
             </div>
           </div>

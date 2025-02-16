@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from controllers.user_controller import register_user, login_user, save_rl_data, get_rl_data
 from controllers.flashcards_controller import get_flashcards, get_flashcard, add_flashcard, update_flashcard, delete_flashcard, find_similar_flashcards, add_flashcard_func
 from controllers.performance_controller import get_performance, add_update_performance, delete_performance, get_q_table, log_user_performance, get_recommended_flashcards, update_q_table, get_top_failed_flashcard
+from controllers.class_controller import add_class, delete_class, get_all_classes
 from utils.db import db
 from api.gpt import question
 from flask_cors import CORS
@@ -487,7 +488,10 @@ app.add_url_rule('/performance/<user_id>/q_table', 'get_q_table', get_q_table, m
 app.add_url_rule('/performance/<user_id>/log', 'log_user_performance', log_user_performance, methods=['GET'])
 # app.add_url_rule('/performance/<user_id>/recommendations', 'get_recommended_flashcards', get_recommended_flashcards, methods=['GET'])
 
-
+# Register routes from class_controller
+app.add_url_rule('/classes', 'add_class', add_class, methods=['POST'])
+app.add_url_rule('/classes/<class_id>', 'delete_class', delete_class, methods=['DELETE'])
+app.add_url_rule('/classes', 'get_all_classes', get_all_classes, methods=['GET'])
 
 if __name__ == "__main__":
     app.run(debug=True)

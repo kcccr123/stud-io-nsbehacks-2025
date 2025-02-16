@@ -21,11 +21,15 @@ if "flashcards" not in db.list_collection_names():
     db.create_collection("flashcards")
 if "performance_data" not in db.list_collection_names():
     db.create_collection("performance_data")
+if "classes" not in db.list_collection_names():
+    db.create_collection("classes")
 
 # Access a collection
 user_collection = db.get_collection("users")
 flashcard_collection = db.get_collection("flashcards")
 performance_collection = db.get_collection("performance_data")
+class_collection = db.get_collection("classes")
+
 
 # Export db and collection for use in other modules
-__all__ = ['db', 'user_collection', 'flashcard_collection', 'performance_collection']
+__all__ = ['db', 'user_collection', 'flashcard_collection', 'performance_collection', 'class_collection']
