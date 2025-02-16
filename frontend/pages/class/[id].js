@@ -16,6 +16,12 @@ export default function ClassPage() {
   const [progress, setProgress] = useState(50);
 
   const [question, setQuestion] = useState("");
+  const [flashcards, setFlashcards] = useState([]);
+  const [recommendedFlashcard, SetRecommendedFlashcard] = useState({
+    id: "",
+    answer: "",
+    question: "",
+  });
   const [aiText, setAiText] = useState("AI response will appear here...");
   const [answer, setAnswer] = useState("");
   const [flip, setFlip] = useState(false);
@@ -49,15 +55,13 @@ export default function ClassPage() {
   if (!classData) return <div className="text-muted">Loading...</div>;
 
   function handleNextQuestion() {
-    const data = {
-      files: uploadedFiles,
-      topic: question,
-    };
-
-    console.log(data);
-
-    const responseQuestion = `Response to your question: ${question}`;
-    setAiText(responseQuestion);
+    if (flashcards.length > 0) {
+      const nextFlashcard = flashcards.pop();
+      setAiText(nextFlashcard.question);
+      setFlashcards([...flashcards]);
+    } else {
+      setAiText("No more flashcards.");
+    }
   }
 
   function handleAnswer() {
@@ -85,7 +89,7 @@ export default function ClassPage() {
     console.log(question);
     if (selectedFile) {
       const formData = new FormData();
-      formData.append("chat_id", "12345");
+      formData.append("chat_id", "CSC111");
       formData.append("user_id", "67b0e038fede027c6a136c03");
       formData.append("user_request", question);
       formData.append("pdfs", selectedFile); // Key `pdfs` matches your backend expectation
@@ -102,6 +106,8 @@ export default function ClassPage() {
 
         const result = await response.json();
         console.log("Upload successful:", result);
+        setFlashcards(result.flashcards);
+        SetRecommendedFlashcard(result.recommended_flashcard);
         setUploadedFiles((prevFiles) => [...prevFiles, selectedFile]);
         setSelectedFile(null);
       } catch (error) {
