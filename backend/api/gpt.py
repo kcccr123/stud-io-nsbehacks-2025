@@ -1,27 +1,23 @@
+# main.py (or wherever your Flask routes live)
+
 import os
 from flask import Flask, request, jsonify
+from openai import OpenAI
+from dotenv import load_dotenv
 import io
 from PyPDF2 import PdfReader
 import json
-from dotenv import load_dotenv
-from controllers.user_controller import register_user, login_user, save_rl_data, get_rl_data
-from controllers.flashcards_controller import get_flashcards, get_flashcard, add_flashcard, update_flashcard, delete_flashcard, find_similar_flashcards, add_flashcard_func
-from controllers.performance_controller import get_performance, add_update_performance, delete_performance, get_q_table, log_user_performance, get_recommended_flashcards
-from utils.db import db
-from api.gpt import question
-from flask_cors import CORS
 
-
-app = Flask(__name__)
-CORS(app)
-
-chats = {}
+# Import the refactored function    
+from controllers.flashcards_controller import add_flashcard_func
 
 # Load environment variables
 load_dotenv()
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
-def question():
+app = Flask(__name__)
+
+def question(chats):
     """
     Expects:
       - multipart/form-data with:
@@ -43,9 +39,8 @@ def question():
                 "content": (
                     "You are a helpful assistant that processes PDF documents and extracts information. "
                     "Generate 10 flashcards in valid JSON format, with each flashcard containing "
-                    "the keys: question, answer, topic, difficulty. Return ONLY VALID JSON, WHICH CAN BE USED WITH json.loads() e.g.:\n"
-                    "without any Markdown code block formatting. Do NOT include ```json or ```."
-                    "[\n  {\n    \"question\": \"...\",\n   \"topic\": \"...\",\n    \"difficulty\": \"...\"\n  },\n  ...\n]"
+                    "the keys: question, answer, topic, difficulty. Return ONLY JSON, e.g.:\n"
+                    "[\n  {\n    \"question\": \"...\",\n    \"answer\": \"...\",\n    \"topic\": \"...\",\n    \"difficulty\": \"...\"\n  },\n  ...\n]"
                 )
             }
         ]
@@ -60,7 +55,7 @@ def question():
     if not files:
         return jsonify({"error": "No PDF files found."}), 400
 
-    extracted_text = "" 
+    extracted_text = ""
     for file in files:
         if file.filename.lower().endswith(".pdf"):
             try:
@@ -123,41 +118,3 @@ def question():
             "raw_reply": assistant_reply,
             "exception": str(e)
         }), 500
-
-
-
-try:
-    db.command('ping')
-    print("Successfully connected to the database")
-except Exception as e:
-    print("Failed to connect to the database:", e)
-
-# Register routes from user_controller
-app.add_url_rule('/users/register', 'register_user', register_user, methods=['POST'])
-app.add_url_rule('/users/login', 'login_user', login_user, methods=['POST'])
-app.add_url_rule('/users/<user_id>/rl', 'save_rl_data', save_rl_data, methods=['POST'])
-app.add_url_rule('/users/<user_id>/rl', 'get_rl_data', get_rl_data, methods=['GET'])
-
-# Register routes from flashcards_controller
-app.add_url_rule('/flashcards', 'get_flashcards', get_flashcards, methods=['GET'])
-app.add_url_rule('/flashcards/<flashcard_id>', 'get_flashcard', get_flashcard, methods=['GET'])
-app.add_url_rule('/flashcards', 'add_flashcard', add_flashcard, methods=['POST'])
-app.add_url_rule('/flashcards/<flashcard_id>', 'update_flashcard', update_flashcard, methods=['PUT'])
-app.add_url_rule('/flashcards/<flashcard_id>', 'delete_flashcard', delete_flashcard, methods=['DELETE'])
-app.add_url_rule('/flashcards/similar', 'find_similar_flashcards', find_similar_flashcards, methods=['GET'])
-
-app.add_url_rule('/question', 'question', question, methods=['POST'])
-
-# Register routes from performance_controller
-app.add_url_rule('/performance/<user_id>', 'get_performance', get_performance, methods=['GET'])
-app.add_url_rule('/performance/<user_id>', 'add_update_performance', add_update_performance, methods=['POST', 'PUT'])
-app.add_url_rule('/performance/<user_id>', 'delete_performance', delete_performance, methods=['DELETE'])
-app.add_url_rule('/performance/<user_id>/q_table', 'get_q_table', get_q_table, methods=['GET'])
-app.add_url_rule('/performance/<user_id>/log', 'log_user_performance', log_user_performance, methods=['GET'])
-app.add_url_rule('/performance/<user_id>/recommendations', 'get_recommended_flashcards', get_recommended_flashcards, methods=['GET'])
-
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
-    
