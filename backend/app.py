@@ -97,8 +97,8 @@ def question_review():
 
         # 7. Return the generated flashcard
         return jsonify({
-            "generated_flashcard": new_flashcard,
-            "recommended_flashcards_used": recommended_flashcards
+            "recommended_flashcard": new_flashcard,
+            "flashcards": recommended_flashcards
         }), 200
 
     except (json.JSONDecodeError, ValueError) as e:
@@ -204,6 +204,7 @@ def question_study():
 
         # 6. Select one flashcard to return
         selected_flashcard = random.choice(flashcards) if flashcards else None
+
         print('whats goign on???????')
         # Call the function and unpack the response
         response_obj, status_code = get_top_failed_flashcard(user_id, 1.0)
