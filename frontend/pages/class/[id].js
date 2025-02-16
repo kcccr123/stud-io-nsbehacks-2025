@@ -18,7 +18,7 @@ export default function ClassPage() {
   const [question, setQuestion] = useState("");
   const [flashcards, setFlashcards] = useState([]);
   const [recommendedFlashcard, SetRecommendedFlashcard] = useState(null);
-  const [aiText, setAiText] = useState("AI response will appear here...");
+  const [aiText, setAiText] = useState("Generate some questions!");
   const [answer, setAnswer] = useState("");
   const [flip, setFlip] = useState(false);
   const [answerError, setAnswerError] = useState(false);
