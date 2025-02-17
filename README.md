@@ -1,6 +1,6 @@
 # NSBEUOFT Hacks 2025 - 2nd Place
 
-[![Alt text] Demo: (https://www.youtube.com/watch?v=-O3PqlDuvXU)
+Demo: (https://www.youtube.com/watch?v=-O3PqlDuvXU)
 
 ![Stud.io Login Page](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/273/353/datas/original.png)
 ![Stud.io Classes Dashboard](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/273/354/datas/original.png)
