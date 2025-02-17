@@ -1,7 +1,11 @@
 # NSBEUOFT Hacks 2025 - 2nd Place
 
-Demo: (https://www.youtube.com/watch?v=-O3PqlDuvXU)
-Devpost Link (For More Information/Screenshots): https://devpost.com/software/stud-io
+**Demo:**  
+[![Stud.io Demo](https://img.youtube.com/vi/-O3PqlDuvXU/0.jpg)](https://www.youtube.com/watch?v=-O3PqlDuvXU)
+
+**Devpost Link (For More Information/Screenshots):**  
+[https://devpost.com/software/stud-io](https://devpost.com/software/stud-io)
+
 
 ## Inspiration
 The inspiration behind *Stud.io* came from the challenges students face when preparing for exams. We wanted to create a tool that not only generates flashcards from lecture notes but also adapts to each student's learning needs using AI and machine learning (reinforcement learning). We aimed to blend the convenience of automated flashcard creation with personalized learning insights to help students study smarter.
