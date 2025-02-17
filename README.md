@@ -1,5 +1,4 @@
-# NSBEUOFT Hacks 2025
-# 2nd Place
+# NSBEUOFT Hacks 2025 - 2nd Place
 
 ## Inspiration
 The inspiration behind *Stud.io* came from the challenges students face when preparing for exams. We wanted to create a tool that not only generates flashcards from lecture notes but also adapts to each student's learning needs using AI and machine learning (reinforcement learning). We aimed to blend the convenience of automated flashcard creation with personalized learning insights to help students study smarter.
