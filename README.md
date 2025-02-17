@@ -2,12 +2,6 @@
 
 Demo: (https://www.youtube.com/watch?v=-O3PqlDuvXU)
 
-![Stud.io Login Page](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/273/353/datas/original.png)
-![Stud.io Classes Dashboard](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/273/354/datas/original.png)
-![Stud.io Question](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/273/355/datas/original.png)
-![Stud.io Answer](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/273/509/datas/original.png)
-![Stud.io Study Material Upload](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/273/356/datas/original.png)
-
 ## Inspiration
 The inspiration behind *Stud.io* came from the challenges students face when preparing for exams. We wanted to create a tool that not only generates flashcards from lecture notes but also adapts to each student's learning needs using AI and machine learning (reinforcement learning). We aimed to blend the convenience of automated flashcard creation with personalized learning insights to help students study smarter.
 
