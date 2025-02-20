@@ -1,4 +1,4 @@
-# NSBEUOFT Hacks 2025 - 2nd Place
+# NSBEUOFT Hacks 2025 Winner - 2nd Place
 
 **Demo:**  
 [![Stud.io Demo](https://img.youtube.com/vi/-O3PqlDuvXU/0.jpg)](https://www.youtube.com/watch?v=-O3PqlDuvXU)
