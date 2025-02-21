@@ -6,6 +6,17 @@
 **Devpost Link (For More Information/Screenshots):**  
 [https://devpost.com/software/stud-io](https://devpost.com/software/stud-io)
 
+## Built With
+
+![Next JS](https://img.shields.io/badge/Next-black?style=for-the-badge&logo=next.js&logoColor=white)
+![React Badge](https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=000&style=for-the-badge)
+![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)
+
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Flask](https://img.shields.io/badge/flask-%23000.svg?style=for-the-badge&logo=flask&logoColor=white)
+![OpenAI Badge](https://img.shields.io/badge/OpenAI-412991?logo=openai&logoColor=fff&style=for-the-badge)
+![MongoDB](https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white)
+
 
 ## Inspiration
 The inspiration behind *Stud.io* came from the challenges students face when preparing for exams. We wanted to create a tool that not only generates flashcards from lecture notes but also adapts to each student's learning needs using AI and machine learning (reinforcement learning). We aimed to blend the convenience of automated flashcard creation with personalized learning insights to help students study smarter.
